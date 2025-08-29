@@ -57,7 +57,7 @@ def run_stripy_pipeline(
 
     # smaller configuration - we keep a list of expanded loci, and can associate each with multiple datasets
     custom_loci_path = None
-    for path, datasets in config.config_retrieve(['stripy', 'expanded_loci']):
+    for path, datasets in config.config_retrieve(['stripy', 'expanded_loci']).items():
         if dataset in datasets:
             custom_loci_path = path
             break
