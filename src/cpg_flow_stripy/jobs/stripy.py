@@ -81,7 +81,8 @@ def run_stripy_pipeline(
         --input {sequencing_group.id}__{sequencing_group.external_id}.cram  \\
         --logflags {j.log_path} \\
         --config {config_path} \\
-        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument}
+        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
+        --locus {config.config_retrieve(['stripy', 'target_loci'])}
 
     cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.html {j.out_path}
 
