@@ -11,26 +11,29 @@ check_expected_outputs = true
 status_reporter = 'metamist'
 
 [images]
-stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:2.5-1"
+stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5"
 
 [stripy]
 # Analysis_type can be "standard" (fast) or "extended" (marginally slower but also uses unmapped reads for genotying)
 analysis_type = "extended"
 
+# this section should be tidied up before this workflow is used in anger
 # See https://gitlab.com/andreassh/stripy-pipeline#list-of-loci
-# To target a subset of loci for a specific dataset, use like this:
-# all_loci = config.config_retrieve(['stripy', 'target_loci'])
-# dataset_loci = all_loci.get(DATASET, all_loci['default'])... maybe, idk
-# this applies to a stage which had not been implemented yet
-[stripy.target_loci]
-# DATASET = "ABCDE,FGHIJ,KLMNO,PQRST,UVWXY,Z..."
-
-# Excluded by default: C9orf72, HTT
-# default = """ABCD3,AFF2,AR,ARX_1,ARX_2,ATN1,ATXN1,ATXN10,ATXN2,ATXN3,ATXN7,ATXN8OS,\
+target_loci = """ABCD3,AFF2,AR,ARX_1,ARX_2,ATN1,ATXN1,ATXN10,ATXN2,ATXN3,ATXN7,ATXN8OS,\
 #BEAN1,CACNA1A,CBL,CNBP,COMP,CSTB,DAB1,DIP2B,DMD,DMPK,EIF4A3,FGF14,FMR1,FOXL2,FXN,GIPC1,\
 #GLS,HOXA13_1,HOXA13_2,HOXA13_3,HOXD13,JPH3,LRP12,MARCHF6,NIPA1,NOP56,NOTCH2NLC,\
 #NUTM2B-AS1,PABPN1,PHOX2B,PPP2R2B,PRDM12,RAPGEF2,RFC1,RILPL1,RUNX2,SAMD12,SOX3,\
-#STARD7,TBP,TBX1,TCF4,THAP11,TNRC6A,VWA1,XYLT1,YEATS2,ZFHX3,ZIC2,ZIC3"""
+#STARD7,TBP,TBX1,TCF4,THAP11,TNRC6A,VWA1,XYLT1,YEATS2,ZFHX3,ZIC2,ZIC3,C9orf72,HTT"""
+
+# To target a subset of loci for a specific dataset, use like this:
+# all_loci = config.config_retrieve(['stripy', 'dataset_target_loci'])
+# dataset_loci = all_loci.get(DATASET, all_loci['default'])... maybe, idk
+# this applies to a stage which had not been implemented yet
+[stripy.dataset_target_loci]
+# DATASET = "ABCDE,FGHIJ,KLMNO,PQRST,UVWXY,Z..."
+
+# Excluded by default: C9orf72, HTT
+# default
 
 # Change the path the stripy report is saved to, useful when testing novel loci
 output_prefix = "stripy"
