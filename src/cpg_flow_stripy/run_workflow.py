@@ -13,8 +13,7 @@ from argparse import ArgumentParser
 
 from cpg_flow.workflow import run_workflow
 
-# TODO(you) import your own Stages
-from workflow_name.stages import DoSomethingGenericWithBash, PrintPreviousJobOutputInAPythonJob
+from cpg_flow_stripy.stages import RunStripy
 
 
 def cli_main():
@@ -25,16 +24,7 @@ def cli_main():
     parser.add_argument('--dry_run', action='store_true', help='Dry run')
     args = parser.parse_args()
 
-    # Note - in production-pipelines the main.py script sets up layers of default configuration,
-    # overlaid with workflow-specific configuration, and then runs the workflow.
-    # If you want to re-use that model, this should be carried out before entering the workflow
-
-    # Otherwise all configuration should be done by providing all relevant configs to analysis-runner
-    # https://github.com/populationgenomics/team-docs/blob/main/cpg_utils_config.md#config-in-analysis-runner-jobs
-
-    stages = [DoSomethingGenericWithBash, PrintPreviousJobOutputInAPythonJob]
-
-    run_workflow(stages=stages, dry_run=args.dry_run)
+    run_workflow(stages=[RunStripy], dry_run=args.dry_run)
 
 
 if __name__ == '__main__':
