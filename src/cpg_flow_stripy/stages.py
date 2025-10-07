@@ -16,7 +16,7 @@ def _update_meta(output_path: str) -> dict[str, Any]:
     """
     Add the detected outlier loci to the analysis meta
     """
-    from cloudpathlib.anypath import to_anypath
+    from cloudpathlib.anypath import to_anypath  # noqa: PLC0415
 
     # Munge html path into log path (As far as I can know I can not pass to
     # output paths to one analysis object?)
