@@ -7,6 +7,12 @@ import json
 import hailtop.batch as hb
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
+from loguru import logger
+
+from cpg_flow_stripy.scripts import make_stripy_html
+from cpg_flow_stripy.utils import get_loci_lists
+
+REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
 
 def run_stripy_pipeline(
@@ -101,6 +107,55 @@ def run_stripy_pipeline(
 
     batch_instance.write_output(j.log_path, outputs['log'])
     batch_instance.write_output(j.json_path, outputs['json'])
-    batch_instance.write_output(j.out_path, outputs['html'])
 
     return j
+
+
+def make_stripy_reports(
+    sequencing_group: targets.SequencingGroup,
+    json_path: Path,
+    outputs: dict[str, Path],
+    job_attrs: dict,
+) -> list[hb.batch.job.Job]:
+    """
+    Make HTML reports for STRipy results, subsetting the full JSON results to
+    only loci of interest, depending on the dataset of the input sequencing group.
+
+    The subset JSONs are then used to populate HTML report templates.
+    """
+    loci_lists = get_loci_lists(sequencing_group.dataset.name)
+    logger.info(f'{sequencing_group.id}: Making STRipy reports for loci lists: {",".join(loci_lists.keys())}')
+
+    batch_instance = hail_batch.get_batch()
+    j = batch_instance.new_job('Make STRipy reports', job_attrs | {'tool': 'stripy-report'})
+
+    j.image(config.config_retrieve(['workflow', 'driver_image']))
+    j.cpu(2)
+
+    input_json = batch_instance.read_input(str(json_path))
+
+    for loci_list_name, loci in loci_lists.items():
+        # make a resource group for each loci list's JSON subset and HTML report
+        j.declare_resource_group(
+            **{
+                loci_list_name: {
+                    'json': '{root}.json',
+                    'html': '{root}.html',
+                },
+            },
+        )
+        loci_str = ','.join(loci)
+
+        # Subset the full loci JSON to just the loci in this list
+        # TODO maybe do this with python instead of jq?
+        j.command(f"cat {input_json} | jq '.loci |= map(select(.name | IN({loci_str})))' > {j[loci_list_name].json}")
+
+        # Now copy template HTML report and populate with subset JSON
+        j.command(
+            f'python3 {make_stripy_html.__file__} --results {j[loci_list_name].json} --output {j[loci_list_name].html}'
+        )
+
+        batch_instance.write_output(j[loci_list_name].json, outputs['json'][loci_list_name])
+        batch_instance.write_output(j[loci_list_name].html, outputs['html'][loci_list_name])
+
+    return [j]

@@ -10,6 +10,7 @@ from cpg_flow import stage, targets
 from cpg_utils import Path
 
 from cpg_flow_stripy.jobs import stripy
+from cpg_flow_stripy.utils import get_loci_lists
 
 
 def _update_meta(output_path: str) -> dict[str, Any]:
@@ -39,43 +40,74 @@ def _update_meta(output_path: str) -> dict[str, Any]:
 
 
 @stage.stage(
-    analysis_type='web',
-    analysis_keys=[
-        'html',
-    ],
-    update_analysis_meta=_update_meta,
+    # analysis_type='web',
+    # analysis_keys=[
+    #     'html',
+    # ],
+    # update_analysis_meta=_update_meta,
 )
 class RunStripy(stage.SequencingGroupStage):
     """
-    Call stripy to run STR analysis on known pathogenic loci.
-
-    Changed behaviour - this step does as much calling as possible. Instead of taking a subset of Loci, this would
-    generate the most expansive set of results for a given version of STRipy
-
-    A next Stage would optionally generate subset reports (e.g. late-onset, incidental-findings), with each of those
-    results (JSON, HTML) being saved in a separate namespace so we know the locus list which was used
-
-    The intention would be to do as much calling as possible with each run of STRipy, making most efficient use of the
-    'warmed up' CRAM in GCS, then to generate subsets of that data as HTML/JSON, we only have to access a tiny file,
-    with negligible cost implications
+    Call stripy to run STR analysis on all available loci. Produces a JSON with findings
+    for all loci, which can then be subset to specific loci of interest and used to create
+    HTML reports.
     """
 
     def expected_outputs(self, sequencing_group: targets.SequencingGroup) -> dict[str, Path]:
         analysis_prefix = sequencing_group.dataset.analysis_prefix()
         return {
-            'html': sequencing_group.dataset.web_prefix() / 'stripy' / f'{sequencing_group.id}.stripy.html',
+            # 'html': sequencing_group.dataset.web_prefix() / 'stripy' / f'{sequencing_group.id}.stripy.html',
             'json': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.json',
             'log': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.log.txt',
         }
 
     def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
         outputs = self.expected_outputs(sequencing_group)
-        jobs = []
         j = stripy.run_stripy_pipeline(
             sequencing_group=sequencing_group,
             outputs=outputs,
             job_attrs=self.get_job_attrs(sequencing_group),
         )
-        jobs.append(j)
+
+        return self.make_outputs(sequencing_group, data=outputs, jobs=[j])
+
+
+# TODO - the namespacing of these outputs should include the STRipy version, somehow
+@stage.stage(
+    analysis_type='web',
+    analysis_keys=['global', 'default', 'neuro'],
+    tolerate_missing_output=True,
+    update_analysis_meta=_update_meta,
+    required_stages=[RunStripy],
+)
+class MakeStripyReports(stage.SequencingGroupStage):
+    """
+    Create HTML reports for STRipy analysis, subsetting the full JSON results to
+    only loci of interest, depending on the dataset of the input sequencing group.
+    """
+
+    def expected_outputs(self, sequencing_group: targets.SequencingGroup) -> dict[str, Path]:
+        """
+        Get the expected output paths for the HTML reports - there can be multiple,
+        depending on how many distinct loci lists are in scope for the dataset.
+        """
+        outputs = {}
+        web_prefix = sequencing_group.dataset.web_prefix()
+        for ll in get_loci_lists(sequencing_group.dataset.name):
+            if ll == 'global':
+                outputs['global'] = web_prefix / 'stripy' / f'{sequencing_group.id}.stripy.html'
+            else:
+                outputs[ll] = web_prefix / 'stripy' / f'{sequencing_group.id}__{ll}.stripy.html'
+
+        return outputs
+
+    def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
+        outputs = self.expected_outputs(sequencing_group)
+        jobs = stripy.make_stripy_reports(
+            sequencing_group=sequencing_group,
+            json_path=inputs.as_path(sequencing_group, RunStripy, 'json'),
+            outputs=outputs,
+            job_attrs=self.get_job_attrs(sequencing_group),
+        )
 
         return self.make_outputs(sequencing_group, data=outputs, jobs=jobs)

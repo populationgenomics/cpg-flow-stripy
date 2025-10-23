@@ -7,8 +7,9 @@ repos:
       - id: check-yaml
         exclude: '\.*conda/.*'
       - id: end-of-file-fixer
+        exclude: 'stripy_report_template.html$'
       - id: trailing-whitespace
-        exclude: '\.txt$|\.tsv$'
+        exclude: '\.txt$|\.tsv$|stripy_report_template.html$'
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: detect-private-key
