@@ -3,20 +3,30 @@ Create Hail Batch jobs to run STRipy
 """
 
 import json
+from typing import TYPE_CHECKING
+
+from cpg_flow_stripy.scripts import indexer, subsetting_jsons
+
+if TYPE_CHECKING:
+    from hailtop.batch.job import Job
+
+    class Targets:
+        class SequencingGroup:
+            id: str
+            dataset: str
+            name: str
+
 
 import hailtop.batch as hb
-from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
-from loguru import logger
 
-from cpg_flow_stripy.scripts import make_stripy_html
 from cpg_flow_stripy.utils import get_loci_lists
 
 REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
 
 def run_stripy_pipeline(
-    sequencing_group: targets.SequencingGroup,
+    sequencing_group: Targets.SequencingGroup,
     outputs: dict[str, Path],
     job_attrs: dict,
 ) -> hb.batch.job.Job:
@@ -112,50 +122,79 @@ def run_stripy_pipeline(
 
 
 def make_stripy_reports(
-    sequencing_group: targets.SequencingGroup,
+    sequencing_group: Targets.SequencingGroup,
     json_path: Path,
     outputs: dict[str, Path],
     job_attrs: dict,
-) -> list[hb.batch.job.Job]:
+) -> list['Job']:
     """
-    Make HTML reports for STRipy results, subsetting the full JSON results to
-    only loci of interest, depending on the dataset of the input sequencing group.
-
-    The subset JSONs are then used to populate HTML report templates.
+    Makes HTML reports for STRipy results using the all-in-one
+    subsetting_jsons.py script inside an Exomiser-configured job.
     """
     loci_lists = get_loci_lists(sequencing_group.dataset.name)
-    logger.info(f'{sequencing_group.id}: Making STRipy reports for loci lists: {",".join(loci_lists.keys())}')
-
     batch_instance = hail_batch.get_batch()
-    j = batch_instance.new_job('Make STRipy reports', job_attrs | {'tool': 'stripy-report'})
 
+    j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
-    j.cpu(2)
 
     input_json = batch_instance.read_input(str(json_path))
 
     for loci_list_name, loci in loci_lists.items():
-        # make a resource group for each loci list's JSON subset and HTML report
-        j.declare_resource_group(
-            **{
-                loci_list_name: {
-                    'json': '{root}.json',
-                    'html': '{root}.html',
-                },
-            },
-        )
-        loci_str = ','.join(loci)
+        resource_group = j[loci_list_name]
+        loci_str = ' '.join(loci)
 
-        # Subset the full loci JSON to just the loci in this list
-        # TODO maybe do this with python instead of jq?
-        j.command(f"cat {input_json} | jq '.loci |= map(select(.name | IN({loci_str})))' > {j[loci_list_name].json}")
-
-        # Now copy template HTML report and populate with subset JSON
+        # --- Job Command (SINGLE STEP) ---
+        # Runs your script, telling it to write to the local VM path
         j.command(
-            f'python3 {make_stripy_html.__file__} --results {j[loci_list_name].json} --output {j[loci_list_name].html}'
+            f'python3 {subsetting_jsons.__file__} '
+            f'--input_json "{input_json}" '
+            f'--report_type "{loci_list_name}" '
+            f'--loci_list "{loci_str}" '
+            f'--output {resource_group} '
         )
 
-        batch_instance.write_output(j[loci_list_name].json, outputs['json'][loci_list_name])
-        batch_instance.write_output(j[loci_list_name].html, outputs['html'][loci_list_name])
+        # Get the *exact file path* from the flat dictionary
+        target_cloud_path = str(outputs[loci_list_name])
+
+        batch_instance.write_output(
+            resource_group,  # <-- Write the specific FILE
+            target_cloud_path,  # <-- To the specific exact PATH
+        )
 
     return [j]
+
+
+def make_index_page(
+    sequencing_group: Targets.SequencingGroup,
+    inputs: dict[str, Path],
+    output: Path,
+    job_attrs: dict,
+) -> 'Job':
+    """
+    Makes an index HTML page linking to all STRipy reports for a sequencing group.
+    """
+    batch_instance = hail_batch.get_batch()
+    bucket_name = sequencing_group.dataset.name
+
+    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {sequencing_group.id}', attributes=job_attrs)
+    j.image(config.config_retrieve(['workflow', 'driver_image']))
+
+    report_links = list(inputs.values())
+    inputs_files = ' '.join([batch_instance.read_input(f) for f in report_links])
+
+    # --- Job Command (SINGLE STEP) ---
+    # Runs your script, telling it to write to the local VM path
+    j.command(
+        f'cd $BATCH_TMPDIR'
+        f'python3 {indexer.__file__}'
+        f'--txt_file_paths {inputs_files} '
+        f'--output_root {output} '
+        f'--bucket_name {bucket_name} '
+    )
+
+    batch_instance.write_output(
+        j.out_path,
+        str(output),
+    )
+
+    return j
