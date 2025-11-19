@@ -183,7 +183,7 @@ def make_stripy_reports(
         )
 
     # after all commands are executed, extract a log file
-    batch_instance.write_output(j.logfile, outputs['log'])
+    batch_instance.write_output(j.log_path, outputs['log'])
 
     return j
 

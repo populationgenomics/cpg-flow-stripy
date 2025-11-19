@@ -20,8 +20,8 @@ def main(input_json, output, report_type, loci_list, logfile: str):
 
     print(f"  Relevant loci for '{report_type}': {loci_list}")
 
-    listofdictonarydata = data['GenotypingResults']
-    list_of_available_genes = [list(d.keys())[0] for d in listofdictonarydata]
+    listofdictionarydata = data['GenotypingResults']
+    list_of_available_genes = [list(d.keys())[0] for d in listofdictionarydata]
     missing_genes = [gene for gene in loci_list if gene not in list_of_available_genes]
 
     # log the missing genes
@@ -34,7 +34,7 @@ def main(input_json, output, report_type, loci_list, logfile: str):
     print(f'  Available loci in input JSON: {list_of_available_genes}')
     print(f'  Missing loci for this report: {missing_genes}')
 
-    dict_of_dicts = {list(d.keys())[0]: d for d in listofdictonarydata}
+    dict_of_dicts = {list(d.keys())[0]: d for d in listofdictionarydata}
     subset_dict = {k: v for k, v in dict_of_dicts.items() if k in loci_list}
     subset_list = [v for k, v in subset_dict.items()]
 

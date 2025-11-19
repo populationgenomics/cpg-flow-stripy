@@ -63,7 +63,7 @@ def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
 
             # e.g. {
             #          CPGxxx: {
-            #              report_type_1: "gene1,gene2,gene3",,
+            #              report_type_1: "gene1,gene2,gene3",
             #              report_type_2: "None",
             #          },
             #      ...
@@ -117,7 +117,7 @@ def main(input_path, output, log: str):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Generate BedGraph tracks for splice site variants')
+    parser = ArgumentParser(description='Generate an Index page for all STRipy reports in a Dataset')
     parser.add_argument('--input_txt', help='file containing all inputs to this index', required=True)
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)

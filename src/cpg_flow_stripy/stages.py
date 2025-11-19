@@ -83,7 +83,7 @@ class MakeStripyReports(stage.SequencingGroupStage):
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
 
-        std_prefix = sequencing_group.dataset.web_prefix()
+        std_prefix = sequencing_group.dataset.prefix()
         web_prefix = sequencing_group.dataset.web_prefix()
 
         return {
@@ -139,7 +139,7 @@ class MakeIndexPage(stage.DatasetStage):
             key: value for key, value in all_outputs_previous_stage.items() if key in dataset.get_sequencing_group_ids()
         }
 
-        jobs = stripy.make_index_page(
+        job = stripy.make_index_page(
             dataset_name=dataset.name,
             inputs=dataset_outputs_previous_stage,
             output=outputs['index'],
@@ -147,4 +147,4 @@ class MakeIndexPage(stage.DatasetStage):
             job_attrs=self.get_job_attrs(dataset),
         )
 
-        return self.make_outputs(dataset, data=outputs, jobs=jobs)
+        return self.make_outputs(dataset, data=outputs, jobs=job)
