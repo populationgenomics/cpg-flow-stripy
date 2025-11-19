@@ -47,7 +47,7 @@ packages = ["src/cpg_flow_stripy"]
 include_package_data = true
 
 [options.package_data]
-'cpg_flow_stripy'=  ['config_template.toml']
+'cpg_flow_stripy'=  ['config_template.toml', 'stripy_report_template.html', 'index_template.html']
 
 [tool.mypy]
 ignore_missing_imports = true

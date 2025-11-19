@@ -69,20 +69,7 @@ class RunStripy(stage.SequencingGroupStage):
         return self.make_outputs(sequencing_group, data=outputs, jobs=[j])
 
 
-@stage.stage(
-#    analysis_type='web',
-#    analysis_keys=[
-#        'global',
-#        'default',
-#        'default_with_exclusions',
-#        'neuro_with_research_inclusions',
-#        'paediatric',
-#        'kidney',
-#    ],
-#    tolerate_missing_output=True,
-#    update_analysis_meta=_update_meta,
-    required_stages=[RunStripy],
-)
+@stage.stage(required_stages=RunStripy)
 class MakeStripyReports(stage.SequencingGroupStage):
     """
     Create HTML reports for STRipy analysis, subsetting the full JSON results to
@@ -95,12 +82,17 @@ class MakeStripyReports(stage.SequencingGroupStage):
         depending on how many distinct loci lists are in scope for the dataset.
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
-        outputs = {}
-        web_prefix = sequencing_group.dataset.web_prefix()
-        for ll in get_loci_lists(sequencing_group.dataset.name):
-            outputs[ll] = web_prefix / 'stripy' / f'{loci_version}' / f'{sequencing_group.id}__{sequencing_group.pedigree.}__{ll}.html'
 
-        return outputs
+        std_prefix = sequencing_group.dataset.web_prefix()
+        web_prefix = sequencing_group.dataset.web_prefix()
+
+        return {
+            **{
+                ll: web_prefix / 'stripy' / loci_version / f'{sequencing_group.id}__{ll}.html'
+                for ll in get_loci_lists(sequencing_group.dataset.name)
+            },
+            'log': std_prefix / 'stripy' / loci_version / f'{sequencing_group.id}.log',
+        }
 
     def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
         outputs = self.expected_outputs(sequencing_group)
@@ -121,7 +113,7 @@ class MakeStripyReports(stage.SequencingGroupStage):
     update_analysis_meta=_update_meta,
     required_stages=[MakeStripyReports],
 )
-class MakeIndexPage(stage.DatasetStage ):
+class MakeIndexPage(stage.DatasetStage):
     """
     Create HTML reports for STRipy analysis, subsetting the full JSON results to
     only loci of interest, depending on the dataset of the input sequencing group.
@@ -134,15 +126,25 @@ class MakeIndexPage(stage.DatasetStage ):
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
         web_prefix = dataset.web_prefix()
-        outputs = web_prefix / 'stripy' / f'{loci_version}' / f'{dataset}_index.html'
-        return {'index': outputs}
+        return {
+            'index': web_prefix / 'stripy' / loci_version / f'{dataset}_index.html',
+            'all_html_files': dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt',
+        }
 
     def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
-        outputs_previous_stage = inputs.as_dict_by_target(MakeStripyReports)
         outputs = self.expected_outputs(dataset)
+
+        # all outputs from previous stage, e.g. {"CPGIII": {'log': ..., 'neuro': ...}}
+        all_outputs_previous_stage = inputs.as_dict_by_target(MakeStripyReports)
+
+        # reduce _all_ previous stage outputs to just the ones in this dataset
+        dataset_outputs_previous_stage = {
+            key: value for key, value in all_outputs_previous_stage.items() if key in dataset.get_sequencing_group_ids()
+        }
+
         jobs = stripy.make_index_page(
-            dataset=dataset,
-            inputs=outputs_previous_stage,
+            dataset_name=dataset.name,
+            inputs=dataset_outputs_previous_stage,
             outputs=outputs,
             job_attrs=self.get_job_attrs(dataset),
         )

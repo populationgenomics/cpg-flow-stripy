@@ -2,8 +2,12 @@ import json
 from argparse import ArgumentParser
 from pathlib import Path
 
+# used to navigate from the installed location of this package to the HTML template file
+from importlib import resources
 
-def main(input_json, output, report_type, loci_list):
+
+def main(input_json, output, report_type, loci_list, logfile: str):
+    # todo this won't be available here
     # This template MUST be available in the Docker image's working directory
     template_html_file = Path('results_template.html')
 
@@ -23,6 +27,14 @@ def main(input_json, output, report_type, loci_list):
     listofdictonarydata = data['GenotypingResults']
     list_of_available_genes = [list(d.keys())[0] for d in listofdictonarydata]
     missing_genes = [gene for gene in loci_list if gene not in list_of_available_genes]
+
+    # log the missing genes
+    with open(logfile, 'a') as handle:
+        if missing_genes:
+            handle.write(f'{sample_id}\t{report_type}\t{",".join(missing_genes)}\n')
+        else:
+            handle.write(f'{sample_id}\t{report_type}\tNone\n')
+
     print(f'  Available loci in input JSON: {list_of_available_genes}')
     print(f'  Missing loci for this report: {missing_genes}')
 
@@ -38,10 +50,17 @@ def main(input_json, output, report_type, loci_list):
 
     # --- Generate HTML Output ---
     # This script writes the final HTML to the --output path
-    with open(template_html_file) as results_html_template, open(output, 'w') as output_html_file:
+    with (
+        resources.open_text('cpg_flow_stripy', 'stripy_report_template.html') as results_html_template,
+        open(output, 'w') as output_html_file,
+    ):
         for line in results_html_template:
-            output_html_file.write(line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4)))
-            output_html_file.write(line.replace('/*MissingGenesJSON*/', json.dumps(missing_genes, indent=4)))
+            # double replace, single write
+            output_html_file.write(
+                line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4)).replace(
+                    '/*MissingGenesJSON*/', json.dumps(missing_genes, indent=4)
+                )
+            )
 
     print(f'  HTML file generated: {output}')
 
@@ -52,5 +71,6 @@ if __name__ == '__main__':
     parser.add_argument('--output', help='Output path for the final HTML file', required=True)
     parser.add_argument('--report_type', help='report type', required=True)
     parser.add_argument('--loci_list', help='string_list_of_loci', required=True, nargs='+')
+    parser.add_argument('--log_file', help='path to log missing loci to', required=True)
     args = parser.parse_args()
-    main(args.input_json, args.output, args.report_type, args.loci_list)
+    main(args.input_json, args.output, args.report_type, args.loci_list, logfile=args.log_file)

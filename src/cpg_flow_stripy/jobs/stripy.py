@@ -5,16 +5,8 @@ Create Hail Batch jobs to run STRipy
 import json
 from typing import TYPE_CHECKING
 
-from cpg_flow_stripy.scripts import indexer, subsetting_jsons
-
-if TYPE_CHECKING:
-    from hailtop.batch.job import Job
-
-    class Targets:
-        class SequencingGroup:
-            id: str
-            dataset: str
-            name: str
+from cpg_flow import targets, workflow
+from cpg_flow_stripy.scripts import indexer
 
 
 import hailtop.batch as hb
@@ -22,11 +14,44 @@ from cpg_utils import Path, config, hail_batch, to_path
 
 from cpg_flow_stripy.utils import get_loci_lists
 
+from metamist.graphql import gql, query
+
+if TYPE_CHECKING:
+    from hailtop.batch.job import BashJob
+
+# not used, needs correction
 REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
+
+PEDIGREE_QUERY = gql(
+    """
+query Pedigree($project: String!) {
+  project(name: $project) {
+    sequencingGroups {
+      id
+      sample {
+        participant {
+          families {
+            externalId
+          }
+        }
+      }
+    }
+  }
+}""",
+)
+
+
+def get_cpg_to_family_mapping(dataset: str) -> dict[str, str]:
+    """Get the CPG ID to external Family ID mapping for all members of this dataset, cached per dataset."""
+    result = query(PEDIGREE_QUERY, variables={'project': dataset})
+    return {
+        entry['id']: entry['sample']['participant']['families'][0]['externalId']
+        for entry in result['project']['sequencingGroups']
+    }
 
 
 def run_stripy_pipeline(
-    sequencing_group: Targets.SequencingGroup,
+    sequencing_group: targets.SequencingGroup,
     outputs: dict[str, Path],
     job_attrs: dict,
 ) -> hb.batch.job.Job:
@@ -121,11 +146,11 @@ def run_stripy_pipeline(
 
 
 def make_stripy_reports(
-    sequencing_group: Targets.SequencingGroup,
+    sequencing_group: targets.SequencingGroup,
     json_path: Path,
     outputs: dict[str, Path],
     job_attrs: dict,
-) -> list['Job']:
+) -> 'BashJob':
     """
     Makes HTML reports for STRipy results using the all-in-one
     subsetting_jsons.py script inside an Exomiser-configured job.
@@ -136,7 +161,7 @@ def make_stripy_reports(
     j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
 
-    input_json = batch_instance.read_input(str(json_path))
+    input_json = batch_instance.read_input(json_path)
 
     for loci_list_name, loci in loci_lists.items():
         resource_group = j[loci_list_name]
@@ -144,13 +169,14 @@ def make_stripy_reports(
 
         # --- Job Command (SINGLE STEP) ---
         # Runs your script, telling it to write to the local VM path
-        j.command(
-            f'python3 {subsetting_jsons.__file__} '
-            f'--input_json "{input_json}" '
-            f'--report_type "{loci_list_name}" '
-            f'--loci_list "{loci_str}" '
-            f'--output {resource_group} '
-        )
+        j.command(f"""
+            python3 -m cpg_flow_stripy.scripts.subsetting_jsons \\
+            --input_json {input_json} \\
+            --report_type {loci_list_name} \\
+            --loci_list {loci_str} \\
+            --output {resource_group} \\
+            --logfile {j.log_path}
+        """)
 
         # Get the *exact file path* from the flat dictionary
         target_cloud_path = str(outputs[loci_list_name])
@@ -160,41 +186,61 @@ def make_stripy_reports(
             target_cloud_path,  # <-- To the specific exact PATH
         )
 
-    return [j]
+    # after all commands are executed, extract a log file
+    batch_instance.write_output(j.logfile, outputs['log'])
+
+    return j
 
 
 def make_index_page(
-    dataset: Targets.dataset,
+    dataset_name: str,
     inputs: dict[str, dict[str, Path]],
-    output: Path,
+    outputs: dict[str, Path],
     job_attrs: dict,
-) -> 'Job':
+) -> 'BashJob':
     """
     Makes an index HTML page linking to all STRipy reports for a sequencing group.
     """
     batch_instance = hail_batch.get_batch()
-    bucket_name = dataset.name
 
-    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset.id}', attributes=job_attrs)
+    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset_name}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
 
-    report_links = inputs.values()
-    report_links = list(report_links.values())
-    inputs_files = ' '.join([batch_instance.read_input(f) for f in report_links])
+    # separate out all the real file paths from the log file paths - localise the log files
+    local_log_files = [hail_batch.get_batch().read_input(output_dict.pop('log')) for output_dict in inputs.values()]
+
+    # concatenate all those separate log files into a single log
+    j.command(f'cat {" ".join(local_log_files)} > {j.biglog}')
+
+    # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
+    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name)
+
+    # an object to store all the content we need to write
+    collected_lines: list[str] = []
+    for cpg_id, output_dict in inputs.items():
+        # must find a family ID for this CPG ID
+        fam_id = cpg_fam_mapping[cpg_id]
+
+        for report_type, report_path in output_dict.items():
+            collected_lines.append(f'{cpg_id}\t{fam_id}\t{report_type}\t{report_path}')
+
+    # write all reports to a single temp file, instead of passing an arbitrary number of CLI/script arguments
+    with to_path(outputs['all_html_files']).open('w') as f:
+        f.write('\n'.join(collected_lines))
+
+    # localise that file
+    mega_input_file = hail_batch.get_batch().read_input(outputs['all_html_files'])
 
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
-    j.command(
-        f'cd $BATCH_TMPDIR'
-        f'python3 {indexer.__file__}'
-        f'--txt_file_paths {inputs_files} '
-        f'--output_root {output} '
-        f'--bucket_name {bucket_name} '
-    )
+    j.command(f"""
+        python3 -m cpg_flow_stripy.scripts.indexer \\
+        --input_txt {mega_input_file} \\
+        --dataset_name {dataset_name} \\
+        --output {j.index} \\
+        --logfile {j.biglog} \\
+    """)
 
-    batch_instance.write_output(
-        j.out_path,
-        str(output),
-    )
+    batch_instance.write_output(j.index, outputs['index'])
 
     return j

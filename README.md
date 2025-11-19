@@ -47,4 +47,3 @@ Outputs:
 Consolidated HTML index page
 Cross-sample navigation interface
 Dataset-level STR analysis summary
-
