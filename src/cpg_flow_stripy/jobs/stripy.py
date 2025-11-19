@@ -100,7 +100,6 @@ def run_stripy_pipeline(
         --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
         --locus {config.config_retrieve(['stripy', 'target_loci'])}
 
-    cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.html {j.out_path}
 
     if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json ]; then
         cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json {j.json_path}
@@ -165,8 +164,8 @@ def make_stripy_reports(
 
 
 def make_index_page(
-    sequencing_group: Targets.SequencingGroup,
-    inputs: dict[str, Path],
+    dataset: Targets.dataset,
+    inputs: dict[str, dict[str, Path]],
     output: Path,
     job_attrs: dict,
 ) -> 'Job':
@@ -174,12 +173,13 @@ def make_index_page(
     Makes an index HTML page linking to all STRipy reports for a sequencing group.
     """
     batch_instance = hail_batch.get_batch()
-    bucket_name = sequencing_group.dataset.name
+    bucket_name = dataset.name
 
-    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {sequencing_group.id}', attributes=job_attrs)
+    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
 
-    report_links = list(inputs.values())
+    report_links = inputs.values()
+    report_links = list(report_links.values())
     inputs_files = ' '.join([batch_instance.read_input(f) for f in report_links])
 
     # --- Job Command (SINGLE STEP) ---

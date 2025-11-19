@@ -70,17 +70,17 @@ class RunStripy(stage.SequencingGroupStage):
 
 
 @stage.stage(
-    analysis_type='web',
-    analysis_keys=[
-        'global',
-        'default',
-        'default_with_exclusions',
-        'neuro_with_research_inclusions',
-        'paediatric',
-        'kidney',
-    ],
-    tolerate_missing_output=True,
-    update_analysis_meta=_update_meta,
+#    analysis_type='web',
+#    analysis_keys=[
+#        'global',
+#        'default',
+#        'default_with_exclusions',
+#        'neuro_with_research_inclusions',
+#        'paediatric',
+#        'kidney',
+#    ],
+#    tolerate_missing_output=True,
+#    update_analysis_meta=_update_meta,
     required_stages=[RunStripy],
 )
 class MakeStripyReports(stage.SequencingGroupStage):
@@ -98,7 +98,7 @@ class MakeStripyReports(stage.SequencingGroupStage):
         outputs = {}
         web_prefix = sequencing_group.dataset.web_prefix()
         for ll in get_loci_lists(sequencing_group.dataset.name):
-            outputs[ll] = web_prefix / 'stripy' / f'{loci_version}' / f'{sequencing_group.id}__{ll}.html'
+            outputs[ll] = web_prefix / 'stripy' / f'{loci_version}' / f'{sequencing_group.id}__{sequencing_group.pedigree.}__{ll}.html'
 
         return outputs
 
@@ -121,30 +121,30 @@ class MakeStripyReports(stage.SequencingGroupStage):
     update_analysis_meta=_update_meta,
     required_stages=[MakeStripyReports],
 )
-class MakeIndexPage(stage.SequencingGroupStage):
+class MakeIndexPage(stage.DatasetStage ):
     """
     Create HTML reports for STRipy analysis, subsetting the full JSON results to
     only loci of interest, depending on the dataset of the input sequencing group.
     """
 
-    def expected_outputs(self, sequencing_group: targets.SequencingGroup) -> dict[str, Path]:
+    def expected_outputs(self, dataset: targets.Dataset) -> dict[str, Path]:
         """
         Get the expected output paths for the HTML reports - there can be multiple,
         depending on how many distinct loci lists are in scope for the dataset.
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
-        web_prefix = sequencing_group.dataset.web_prefix()
-        outputs = web_prefix / 'stripy' / f'{loci_version}' / f'{sequencing_group.dataset}_index.html'
+        web_prefix = dataset.web_prefix()
+        outputs = web_prefix / 'stripy' / f'{loci_version}' / f'{dataset}_index.html'
         return {'index': outputs}
 
-    def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
-        outputs_previous_stage = inputs.as_path_by_target(MakeStripyReports)
-        outputs = self.expected_outputs(sequencing_group)
+    def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
+        outputs_previous_stage = inputs.as_dict_by_target(MakeStripyReports)
+        outputs = self.expected_outputs(dataset)
         jobs = stripy.make_index_page(
-            sequencing_group=sequencing_group,
-            inputs=inputs.as_path(outputs_previous_stage),
+            dataset=dataset,
+            inputs=outputs_previous_stage,
             outputs=outputs,
-            job_attrs=self.get_job_attrs(sequencing_group),
+            job_attrs=self.get_job_attrs(dataset),
         )
 
-        return self.make_outputs(sequencing_group, data=outputs, jobs=jobs)
+        return self.make_outputs(dataset, data=outputs, jobs=jobs)
