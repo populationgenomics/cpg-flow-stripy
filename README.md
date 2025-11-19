@@ -8,42 +8,39 @@ This workflow is designed to process short-read sequencing data and create repor
 
 The short-read data is processed at the sequencing group level, and STRipy reports are generated for each sequencing group. The configuration allows complete customisation as to which STR loci are analysed and which reports are created.
 
+## Example invocation
+
+```bash
+analysis-runner \
+    --skip-repo-checkout \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.1.0 \
+    --config src/cpg_flow_stripy/config_template.toml \
+    --config stripy_loci.toml \  # containing the inputs_cohorts and sequencing_type
+    --dataset seqr \
+    --description 'stripy' \
+    --access-level standard \
+    --output-dir stripy_run_<date> \
+  run_workflow
+```
+
 ## Requirements
 
 - Clone the production-pipelines-configuration repository to a known location and ensure the `stripy` config files are used in the analysis-runner submission.
 
-#CPG Flow STRipy Pipeline
-## summary
-This pipeline performs Short Tandem Repeat (STR) analysis using the STRipy pipeline on short-read sequencing data.
-## stages
-1. RunStripy:
-Call stripy to run STR analysis on all available loci. Produces a JSON with findings
-for all loci, which can then be subset to specific loci of interest and used to create
-HTML reports.
+# CPG Flow STRipy Pipeline
 
-Job: stripy.run_stripy_pipeline() at src/cpg_flow_stripy/jobs/stripy.py
-Script: No script, stripy is called directly from the driver
-Outputs:
-STR analysis results in JSON format
-Analysis log file
+## stages
+
+1. RunStripy
+
+   1. Call stripy to run STR analysis on all available loci. Produces a JSON & HTML with findings
+   for all loci, but the HTML is not extracted.
 
 2. MakeStripyReports:
-Create dataset-specific HTML reports by subsetting the comprehensive JSON results to focus on loci of interest.
-Different loci lists are applied based on the dataset type, generating multiple targeted reports per sequencing group.
+   1. Leverage the Loci presets and the per-dataset subset selection config file (see [prod-pipes-config](github.com/populationgenomics/production-pipelines-configuration)). 
+   2. Ingest the all-Loci JSON file, and for each requested subset for a Dataset, create a separate HTML, containing only the appropriate Loci 
+   3. For each report record any instances of a Locus being selected, but not being available in the callset
 
-Job: stripy.make_stripy_reports() src/cpg_flow_stripy/jobs/stripy.py
-Script: src/cpg_flow_stripy/scripts/subsetting_jsons.py
-Analysis Type: web
-Output Keys: global, default, default_with_exclusions, neuro_with_research_inclusions, paediatric, kidney
-Dependencies: Requires RunStripy stage
-Creates dataset-specific HTML reports by subsetting the comprehensive JSON results to focus on loci of interest. Different loci lists are applied based on the dataset type, generating multiple targeted reports per sequencing group.
-Outputs:Multiple HTML reports filtered by loci list type
-
-3. MakeIndexPage
-Aggregates all individual STR reports into a centralized HTML index page, providing navigation and summary views across all sequencing groups in the dataset. Creates a unified interface for accessing and comparing STR analysis results.
-Job: stripy.make_index_page() at src/cpg_flow_stripy/jobs/stripy.py
-Script: src/cpg_flow_stripy/scripts/indexer.py
-Outputs:
-Consolidated HTML index page
-Cross-sample navigation interface
-Dataset-level STR analysis summary
+3. MakeIndexPage 
+   1. DatasetStage, collects all reports generated for the SGs in a Dataset, and creates one Index page
+   2. The index page contains the SG & Family ID, the report sub-type, the link to the report, and any missing loci relative to the documented Loci subset 

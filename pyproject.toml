@@ -7,7 +7,7 @@ name='cpg_flow_stripy'
 description='STR calling and report generation, implemented in CPG-Flow'
 readme = "README.md"
 requires-python = ">=3.10,<3.11"
-version='0.1.0'
+version='0.2.0'
 license={ "file" = "LICENSE" }
 classifiers=[
     'Environment :: Console',
