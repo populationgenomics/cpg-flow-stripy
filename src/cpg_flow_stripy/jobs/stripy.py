@@ -3,14 +3,31 @@ Create Hail Batch jobs to run STRipy
 """
 
 import json
+from typing import TYPE_CHECKING
+
+from cpg_flow_stripy.scripts import indexer, subsetting_jsons
+from cpg_flow.workflow import path_walk
+
+if TYPE_CHECKING:
+    from hailtop.batch.job import Job
+
+    class Targets:
+        class SequencingGroup:
+            id: str
+            dataset: str
+            name: str
+
 
 import hailtop.batch as hb
-from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
+
+from cpg_flow_stripy.utils import get_loci_lists
+
+REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
 
 def run_stripy_pipeline(
-    sequencing_group: targets.SequencingGroup,
+    sequencing_group: Targets.SequencingGroup,
     outputs: dict[str, Path],
     job_attrs: dict,
 ) -> hb.batch.job.Job:
@@ -84,7 +101,6 @@ def run_stripy_pipeline(
         --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
         --locus {config.config_retrieve(['stripy', 'target_loci'])}
 
-    cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.html {j.out_path}
 
     if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json ]; then
         cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json {j.json_path}
@@ -101,6 +117,89 @@ def run_stripy_pipeline(
 
     batch_instance.write_output(j.log_path, outputs['log'])
     batch_instance.write_output(j.json_path, outputs['json'])
-    batch_instance.write_output(j.out_path, outputs['html'])
+
+    return j
+
+
+def make_stripy_reports(
+    sequencing_group: Targets.SequencingGroup,
+    json_path: Path,
+    outputs: dict[str, Path],
+    job_attrs: dict,
+) -> list['Job']:
+    """
+    Makes HTML reports for STRipy results using the all-in-one
+    subsetting_jsons.py script inside an Exomiser-configured job.
+    """
+    loci_lists = get_loci_lists(sequencing_group.dataset.name)
+    batch_instance = hail_batch.get_batch()
+
+    j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
+    j.image(config.config_retrieve(['workflow', 'driver_image']))
+
+    input_json = batch_instance.read_input(str(json_path))
+
+    for loci_list_name, loci in loci_lists.items():
+        resource_group = j[loci_list_name]
+        loci_str = ' '.join(loci)
+
+        # --- Job Command (SINGLE STEP) ---
+        # Runs your script, telling it to write to the local VM path
+        j.command(
+            f'python3 {subsetting_jsons.__file__} '
+            f'--input_json "{input_json}" '
+            f'--report_type "{loci_list_name}" '
+            f'--loci_list "{loci_str}" '
+            f'--output {resource_group} '
+        )
+
+        # Get the *exact file path* from the flat dictionary
+        target_cloud_path = str(outputs[loci_list_name])
+
+        batch_instance.write_output(
+            resource_group,  # <-- Write the specific FILE
+            target_cloud_path,  # <-- To the specific exact PATH
+        )
+
+    return [j]
+
+
+def make_index_page(
+    dataset: Targets.dataset,
+    inputs: dict[str, dict[str, Path]],
+    output: Path,
+    job_attrs: dict,
+) -> 'Job':
+    """
+    Makes an index HTML page linking to all STRipy reports for a sequencing group.
+    """
+    batch_instance = hail_batch.get_batch()
+    bucket_name = dataset.name
+
+    old_suffix = config.config_retrieve(['storage', bucket_name, 'web'])
+    new_suffix = config.config_retrieve(['storage', bucket_name, 'web_url'])
+    list_of_suffixes = [old_suffix, new_suffix]
+
+    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset.id}', attributes=job_attrs)
+    j.image(config.config_retrieve(['workflow', 'driver_image']))
+
+    report_links = path_walk(inputs)
+    inputs_files = ' '.join([ f for f in report_links])
+    web_report_links = [str(p).replace(old_suffix, new_suffix) for p in report_links]
+
+    # --- Job Command (SINGLE STEP) ---
+    # Runs your script, telling it to write to the local VM path
+    j.command(
+        f'cd $BATCH_TMPDIR'
+        f'python3 {indexer.__file__}'
+        f'--txt_file_paths {inputs_files} '
+        f'--output_root {output} '
+        f'--web_report_name {web_report_links} '
+    )
+
+    batch_instance.write_output(
+        j.out_path,
+        str(output),
+    )
 
     return j
