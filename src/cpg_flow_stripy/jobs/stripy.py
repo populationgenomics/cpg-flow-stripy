@@ -238,7 +238,6 @@ def make_index_page(
     j.command(f"""
         python3 -m cpg_flow_stripy.scripts.indexer \\
         --input_txt {mega_input_file} \\
-        --dataset_name {dataset_name} \\
         --output {j.index} \\
         --logfile {j.biglog}
     """)
