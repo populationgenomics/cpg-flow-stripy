@@ -5,16 +5,12 @@ Create Hail Batch jobs to run STRipy
 import json
 from typing import TYPE_CHECKING
 
-from cpg_flow import targets, workflow
-from cpg_flow_stripy.scripts import indexer
-
-
 import hailtop.batch as hb
+from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
+from metamist.graphql import gql, query
 
 from cpg_flow_stripy.utils import get_loci_lists
-
-from metamist.graphql import gql, query
 
 if TYPE_CHECKING:
     from hailtop.batch.job import BashJob
@@ -195,7 +191,8 @@ def make_stripy_reports(
 def make_index_page(
     dataset_name: str,
     inputs: dict[str, dict[str, Path]],
-    outputs: dict[str, Path],
+    output: Path,
+    all_reports: str,
     job_attrs: dict,
 ) -> 'BashJob':
     """
@@ -215,6 +212,9 @@ def make_index_page(
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name)
 
+    file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
+    html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
+
     # an object to store all the content we need to write
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
@@ -222,14 +222,16 @@ def make_index_page(
         fam_id = cpg_fam_mapping[cpg_id]
 
         for report_type, report_path in output_dict.items():
-            collected_lines.append(f'{cpg_id}\t{fam_id}\t{report_type}\t{report_path}')
+            # substitute the report HTML path for a proxy-rendered path
+            corrected_path = str(report_path).replace(file_prefix, html_prefix)
+            collected_lines.append(f'{cpg_id}\t{fam_id}\t{report_type}\t{corrected_path}')
 
     # write all reports to a single temp file, instead of passing an arbitrary number of CLI/script arguments
-    with to_path(outputs['all_html_files']).open('w') as f:
+    with to_path(all_reports).open('w') as f:
         f.write('\n'.join(collected_lines))
 
     # localise that file
-    mega_input_file = hail_batch.get_batch().read_input(outputs['all_html_files'])
+    mega_input_file = hail_batch.get_batch().read_input(all_reports)
 
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
@@ -238,9 +240,9 @@ def make_index_page(
         --input_txt {mega_input_file} \\
         --dataset_name {dataset_name} \\
         --output {j.index} \\
-        --logfile {j.biglog} \\
+        --logfile {j.biglog}
     """)
 
-    batch_instance.write_output(j.index, outputs['index'])
+    batch_instance.write_output(j.index, output)
 
     return j

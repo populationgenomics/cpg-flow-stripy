@@ -257,26 +257,7 @@
 
 		return className
 	}
-	// Function to display missing genes
-	function displayMissingGenes(index, missingGenes) {
-  if (missingGenes && missingGenes.length > 0) {
-    const container = document.getElementById(`genes-not-found-${index}`);
-    const list = document.getElementById(`missing-genes-list-${index}`);
 
-    // Clear existing content
-    list.innerHTML = '';
-
-    // Add each missing gene as a list item
-    missingGenes.forEach(gene => {
-      const li = document.createElement('li');
-      li.textContent = gene;
-      list.appendChild(li);
-    });
-
-    // Show the container
-    container.style.display = 'block';
-  }
-}
 
 	function showResults(data_all) {
 		$('#pagelinks').html('')

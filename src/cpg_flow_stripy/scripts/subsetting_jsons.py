@@ -1,16 +1,12 @@
 import json
 from argparse import ArgumentParser
-from pathlib import Path
 
 # used to navigate from the installed location of this package to the HTML template file
 from importlib import resources
+from pathlib import Path
 
 
 def main(input_json, output, report_type, loci_list, logfile: str):
-    # todo this won't be available here
-    # This template MUST be available in the Docker image's working directory
-    template_html_file = Path('results_template.html')
-
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]
@@ -51,7 +47,7 @@ def main(input_json, output, report_type, loci_list, logfile: str):
     # --- Generate HTML Output ---
     # This script writes the final HTML to the --output path
     with (
-        resources.open_text('cpg_flow_stripy', 'stripy_report_template.html') as results_html_template,
+        resources.open_text('cpg_flow_stripy', 'results_template.html') as results_html_template,
         open(output, 'w') as output_html_file,
     ):
         for line in results_html_template:

@@ -1,6 +1,4 @@
 [workflow]
-name = 'stripy'
-
 input_cohorts = []
 sequencing_type = 'genome'
 

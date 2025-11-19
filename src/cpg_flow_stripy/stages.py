@@ -126,10 +126,7 @@ class MakeIndexPage(stage.DatasetStage):
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
         web_prefix = dataset.web_prefix()
-        return {
-            'index': web_prefix / 'stripy' / loci_version / f'{dataset}_index.html',
-            'all_html_files': dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt',
-        }
+        return {'index': web_prefix / 'stripy' / loci_version / f'{dataset}_index.html'}
 
     def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
         outputs = self.expected_outputs(dataset)
@@ -145,7 +142,8 @@ class MakeIndexPage(stage.DatasetStage):
         jobs = stripy.make_index_page(
             dataset_name=dataset.name,
             inputs=dataset_outputs_previous_stage,
-            outputs=outputs,
+            output=outputs['index'],
+            all_reports=str(dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt'),
             job_attrs=self.get_job_attrs(dataset),
         )
 
