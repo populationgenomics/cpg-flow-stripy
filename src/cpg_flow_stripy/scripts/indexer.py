@@ -48,43 +48,14 @@ def extract_file_data_from_path(file_path_str):
     return {'sequencing_group_id': sequencing_group_id, 'report_type': ll, 'loci_version': loci_version}
 
 
-def create_open_button(file_string, output, bucket_name):
+def create_open_button(file_string, output, web_report_name):
     """
     Return HTML snippet for a button opening the provided file in a new tab
     using the Google Cloud Storage browser URL.
     NOTE: This requires the user to be signed into an authorized Google account.
     """
-    # Convert output to string if it's a Path object
-    output_root_str = str(output)
     file_str = str(file_string)
-
-    # Extract the bucket and path part after 'gs://'
-    if output_root_str.startswith('gs://'):
-        try:
-            # Create the delimiter string we're looking for.
-            # We include the slash to ensure we're splitting at the end of the bucket name.
-            delimiter = f'{bucket_name}/'
-
-            # Split the string by the delimiter, but only perform one split.
-            # This divides the string into [stuff_before, stuff_after]
-            parts = output_root_str.split(delimiter, 1)
-
-            # If the split was successful, 'parts' will have two elements.
-            # The path we want is the second element (at index 1).
-            if len(parts) == 2:
-                path_after_bucket = parts[1]
-                gcs_browser_url = f'https://storage.cloud.google.com/{bucket_name}/{path_after_bucket}/{file_str}'
-            else:
-                # The delimiter (bucket_name/) wasn't found
-                print(f"Warning: Could not find delimiter '{delimiter}' in path '{output_root_str}'.")
-                return None
-        except (AttributeError, TypeError) as e:
-            # Catch specific errors that could occur during string operations
-            print(f"An error occurred while parsing GCS path '{output_root_str}': {e}")
-            return None
-    else:
-        raise ValueError(f'output_root does not appear to be a GCS path (starts with gs://): {output_root_str}')
-
+    gcs_browser_url = f'{web_report_name}/{file_str}'
     return f"""
         <button onclick="window.open('{gcs_browser_url}', '_blank')"
                 style="background-color: #4CAF50; color: white; padding: 8px 16px; border: none;
@@ -149,7 +120,7 @@ def extract_missing_genes(filename):
         return []
 
 
-def create_index_html(txt_file_paths, output, bucket_name, index_template_path='src/index_template.html'):
+def create_index_html(txt_file_paths, output, web_report_name, index_template_path='src/index_template.html'):
     """
     Build consolidated index HTML referencing all HTML files listed in the txt file.
     Files should follow the naming convention:
@@ -171,7 +142,7 @@ def create_index_html(txt_file_paths, output, bucket_name, index_template_path='
                     <td>{file_data['report_type']}</td>
                     <td>{file_data['missing_genes']}</td>
                     <td>{file_data['loci_version']}</td>
-                    <td>{create_open_button(filename, output, bucket_name)}</td>
+                    <td>{create_open_button(filename, output, web_report_name)}</td>
                 </tr>
             """
         else:
@@ -183,7 +154,7 @@ def create_index_html(txt_file_paths, output, bucket_name, index_template_path='
 
 
 def main(
-    txt_file_paths, output, bucket_name, output_index_path='index.html', index_template_path='src/index_template.html'
+    txt_file_paths, output, web_report_name, output_index_path='index.html', index_template_path='src/index_template.html'
 ):
     """
     Main function to generate the index HTML file.
@@ -195,7 +166,7 @@ def main(
         index_template_path: Path to the HTML template
     """
     # Generate the index HTML content
-    index_html_content = create_index_html(txt_file_paths, bucket_name, output, index_template_path)
+    index_html_content = create_index_html(txt_file_paths, web_report_name, output, index_template_path)
 
     # Write to output file
     output_path = Path(output_index_path)
@@ -209,6 +180,6 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Generate BedGraph tracks for splice site variants')
     parser.add_argument('--txt_file_paths', help='list of html files', required=True)
     parser.add_argument('--output', help='Root output directory', required=True)
-    parser.add_argument('--bucket_name', help='name of the dataset', required=True)
+    parser.add_argument('--web_report_name', help='name of the dataset', required=True)
     args = parser.parse_args()
-    main(args.txt_file_paths, args.output, args.bucket_name)
+    main(args.txt_file_paths, args.output, args.web_report_name)

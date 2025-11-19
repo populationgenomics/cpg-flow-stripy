@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 
 from cpg_flow_stripy.scripts import indexer, subsetting_jsons
+from cpg_flow.workflow import path_walk
 
 if TYPE_CHECKING:
     from hailtop.batch.job import Job
@@ -175,12 +176,16 @@ def make_index_page(
     batch_instance = hail_batch.get_batch()
     bucket_name = dataset.name
 
+    old_suffix = config.config_retrieve(['storage', bucket_name, 'web'])
+    new_suffix = config.config_retrieve(['storage', bucket_name, 'web_url'])
+    list_of_suffixes = [old_suffix, new_suffix]
+
     j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
 
-    report_links = inputs.values()
-    report_links = list(report_links.values())
-    inputs_files = ' '.join([batch_instance.read_input(f) for f in report_links])
+    report_links = path_walk(inputs)
+    inputs_files = ' '.join([ f for f in report_links])
+    web_report_links = [str(p).replace(old_suffix, new_suffix) for p in report_links]
 
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
@@ -189,7 +194,7 @@ def make_index_page(
         f'python3 {indexer.__file__}'
         f'--txt_file_paths {inputs_files} '
         f'--output_root {output} '
-        f'--bucket_name {bucket_name} '
+        f'--web_report_name {web_report_links} '
     )
 
     batch_instance.write_output(

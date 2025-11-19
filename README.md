@@ -2,6 +2,11 @@
 
 A CPG workflow for creating STR reports with STRipy, using the [cpg-flow](https://github.com/populationgenomics/cpg-flow) pipeline framework.
 
+## Issues
+
+Grabbing the Missing Genes from STRipy can be problematic
+Missing genes are currently embedded in the HTML, this can be remedied by modifyying the pipeline to generate a separate text file with the missing genes and then grabbing those.
+
 ## Purpose
 
 This workflow is designed to process short-read sequencing data and create reports with [STRipy](https://gitlab.com/andreassh/stripy-pipeline).
