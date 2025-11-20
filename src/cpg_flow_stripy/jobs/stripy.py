@@ -39,7 +39,13 @@ query Pedigree($project: String!) {
 
 def get_cpg_to_family_mapping(dataset: str) -> dict[str, str]:
     """Get the CPG ID to external Family ID mapping for all members of this dataset, cached per dataset."""
-    result = query(PEDIGREE_QUERY, variables={'project': dataset})
+
+    # when run in test we need to manually edit the dataset used in this query
+    query_dataset = dataset
+    if config.config_retrieve(['workflow', 'access_level']) == 'test' and 'test' not in query_dataset:
+        query_dataset += '-test'
+
+    result = query(PEDIGREE_QUERY, variables={'project': query_dataset})
     return {
         entry['id']: entry['sample']['participant']['families'][0]['externalId']
         for entry in result['project']['sequencingGroups']
