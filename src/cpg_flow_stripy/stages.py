@@ -130,7 +130,7 @@ class MakeIndexPage(stage.DatasetStage):
         """
         loci_version = str(config.config_retrieve(['stripy', 'loci_version']))
         web_prefix = dataset.web_prefix()
-        return {'index': web_prefix / 'stripy' / loci_version / f'{dataset}_index.html'}
+        return {'index': web_prefix / 'stripy' / loci_version / f'{dataset.name}_index.html'}
 
     def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
         outputs = self.expected_outputs(dataset)
