@@ -5,6 +5,19 @@ Create Hail Batch jobs to run STRipy
 import json
 from typing import TYPE_CHECKING
 
+from cpg_flow_stripy.scripts import indexer, subsetting_jsons
+from cpg_flow.workflow import path_walk
+
+if TYPE_CHECKING:
+    from hailtop.batch.job import Job
+
+    class Targets:
+        class SequencingGroup:
+            id: str
+            dataset: str
+            name: str
+
+
 import hailtop.batch as hb
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
@@ -200,48 +213,30 @@ def make_index_page(
     """
     batch_instance = hail_batch.get_batch()
 
-    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset_name}', attributes=job_attrs)
+    old_suffix = config.config_retrieve(['storage', bucket_name, 'web'])
+    new_suffix = config.config_retrieve(['storage', bucket_name, 'web_url'])
+    list_of_suffixes = [old_suffix, new_suffix]
+
+    j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
 
-    # separate out all the real file paths from the log file paths - localise the log files
-    local_log_files = [hail_batch.get_batch().read_input(output_dict.pop('log')) for output_dict in inputs.values()]
-
-    # concatenate all those separate log files into a single log
-    j.command(f'cat {" ".join(local_log_files)} > {j.biglog}')
-
-    # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
-    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name)
-
-    file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
-    html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
-
-    # an object to store all the content we need to write
-    collected_lines: list[str] = []
-    for cpg_id, output_dict in inputs.items():
-        # must find a family ID for this CPG ID
-        fam_id = cpg_fam_mapping[cpg_id]
-
-        for report_type, report_path in output_dict.items():
-            # substitute the report HTML path for a proxy-rendered path
-            corrected_path = str(report_path).replace(file_prefix, html_prefix)
-            collected_lines.append(f'{cpg_id}\t{fam_id}\t{report_type}\t{corrected_path}')
-
-    # write all reports to a single temp file, instead of passing an arbitrary number of CLI/script arguments
-    with to_path(all_reports).open('w') as f:
-        f.write('\n'.join(collected_lines))
-
-    # localise that file
-    mega_input_file = hail_batch.get_batch().read_input(all_reports)
+    report_links = path_walk(inputs)
+    inputs_files = ' '.join([ f for f in report_links])
+    web_report_links = [str(p).replace(old_suffix, new_suffix) for p in report_links]
 
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
-    j.command(f"""
-        python3 -m cpg_flow_stripy.scripts.indexer \\
-        --input_txt {mega_input_file} \\
-        --output {j.index} \\
-        --logfile {j.biglog}
-    """)
+    j.command(
+        f'cd $BATCH_TMPDIR'
+        f'python3 {indexer.__file__}'
+        f'--txt_file_paths {inputs_files} '
+        f'--output_root {output} '
+        f'--web_report_name {web_report_links} '
+    )
 
-    batch_instance.write_output(j.index, output)
+    batch_instance.write_output(
+        j.out_path,
+        str(output),
+    )
 
     return j
