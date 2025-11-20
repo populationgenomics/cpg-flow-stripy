@@ -113,8 +113,6 @@ class MakeStripyReports(stage.SequencingGroupStage):
 @stage.stage(
     analysis_type='web',
     analysis_keys=['index'],
-    tolerate_missing_output=True,
-    update_analysis_meta=_update_meta,
     required_stages=[MakeStripyReports],
 )
 class MakeIndexPage(stage.DatasetStage):
@@ -142,13 +140,9 @@ class MakeIndexPage(stage.DatasetStage):
         dataset_outputs_previous_stage = {
             key: value for key, value in all_outputs_previous_stage.items() if key in dataset.get_sequencing_group_ids()
         }
-        if config.config_retrieve(['workflow','access_level']) == 'test':
-            dataset_name=f'{dataset.name}-test'
-        else:
-            dataset_name=dataset.name
 
         job = stripy.make_index_page(
-            dataset_name=dataset_name,
+            dataset_name=dataset.name,
             inputs=dataset_outputs_previous_stage,
             output=outputs['index'],
             all_reports=str(dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt'),
