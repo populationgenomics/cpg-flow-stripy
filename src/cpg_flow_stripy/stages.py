@@ -8,8 +8,6 @@ from typing import Any
 
 from cpg_flow import stage, targets
 from cpg_utils import Path, config
-from cpg_utils.config import config_retrieve
-from tornado.log import access_log
 
 from cpg_flow_stripy.jobs import stripy
 from cpg_flow_stripy.utils import get_loci_lists
