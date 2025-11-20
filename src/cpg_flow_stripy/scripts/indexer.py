@@ -127,12 +127,6 @@ def create_index_html(txt_file_paths, output, web_report_name, index_template_pa
 
     return dict(missing_genes)
 
-def main(
-    txt_file_paths, output, web_report_name, output_index_path='index.html', index_template_path='src/index_template.html'
-):
-    """
-    Main function to generate the index HTML file.
-
 def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> list[dict[str, str]]:
     """Reads the input file containing all details to populate into this index, returns as a list of dicts."""
     all_details: list[dict[str, str]] = []
