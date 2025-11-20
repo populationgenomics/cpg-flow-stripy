@@ -26,6 +26,8 @@ def _update_meta(output_path: str) -> dict[str, Any]:
     outlier_loci = {}
     with to_anypath(log_path).open() as f:
         for line in f:
+            if not line.strip().rstrip():
+                continue
             _path, symbol, score = line.strip().split('\t')
             if not score.isdigit():
                 continue

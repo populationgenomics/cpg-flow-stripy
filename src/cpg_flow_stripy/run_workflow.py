@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 
 from cpg_flow.workflow import run_workflow
 
-from cpg_flow_stripy.stages import RunStripy
+from cpg_flow_stripy.stages import MakeIndexPage
 
 
 def cli_main():
@@ -19,7 +19,7 @@ def cli_main():
     parser.add_argument('--dry_run', action='store_true', help='Dry run')
     args = parser.parse_args()
 
-    run_workflow(name='stripy', stages=[RunStripy], dry_run=args.dry_run)
+    run_workflow(name='stripy', stages=[MakeIndexPage], dry_run=args.dry_run)
 
 
 if __name__ == '__main__':
