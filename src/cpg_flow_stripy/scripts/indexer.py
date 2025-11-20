@@ -8,13 +8,11 @@ from pathlib import Path
 from cpg_utils import config
 
 
-def create_open_button(file_string, output, web_report_name):
+def create_open_button(gcs_browser_url: str) -> str:
     """
     Return HTML snippet for a button opening the provided file in a new tab using the Google Cloud Storage browser URL.
     NOTE: This requires the user to be signed into an authorized Google account.
     """
-    file_str = str(file_string)
-    gcs_browser_url = f'{web_report_name}/{file_str}'
     return f"""
         <button onclick="window.open('{gcs_browser_url}', '_blank')"
                 style="background-color: #4CAF50; color: white; padding: 8px 16px; border: none;
@@ -47,43 +45,7 @@ def create_index_html(input_rows: list[dict[str, str]]) -> str:
         return template.read().replace('<!-- ROWS_WILL_BE_INSERTED_HERE -->', table_rows)
 
 
-    # Read file content
-    try:
-        with open(filename, encoding='utf-8') as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        if isinstance(e, FileNotFoundError):
-            print(f'Error: File not found at {filename}')
-        else:
-            print(f'Error reading file {filename}: {e}')
-        return []
-
-    # Extract JSON from HTML using regex
-    pattern = re.compile(r'<!-- Genes Not Found Section -->.*?<ul id="missing-genes-list-.*?">(.*?)</ul>', re.DOTALL)
-    match = pattern.search(content)
-
-    # Return early if no match or empty content
-    if not match or not match.group(1).strip():
-        return []
-
-    json_string = match.group(1).strip()
-
-    # Parse JSON and validate
-    try:
-        gene_list = json.loads(json_string)
-        if not isinstance(gene_list, list):
-            print(f'Warning: Extracted JSON in {filename} is not a list. Found type: {type(gene_list)}')
-            return []
-        return gene_list
-    except json.JSONDecodeError:
-        print(f'Error: Failed to decode JSON in {filename}.')
-        print('--- Invalid Content Snippet ---')
-        print(json_string[:150] + '...')
-        print('--- End Snippet ---')
-        return []
-
-
-def create_index_html(txt_file_paths, output, web_report_name, index_template_path='src/index_template.html'):
+def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
     """
     Takes a path to a TSV containing the logging details (Loci which were not present during locus subsetting)
     Extracts out the missing loci (if any) which were present for each sample / report subset combination
@@ -97,24 +59,7 @@ def create_index_html(txt_file_paths, output, web_report_name, index_template_pa
             if not line.rstrip():
                 continue
 
-    # Generate table rows
-    table_rows = ''
-    for filename in txt_file_paths:
-        file_data = extract_file_data_from_path(filename)
-        file_data['missing_genes'] = extract_missing_genes(filename)
-        if file_data:
-            table_rows += f"""
-                <tr>
-                    <td>{file_data['sequencing_group_id']}</td>
-                    <td>{file_data['report_type']}</td>
-                    <td>{file_data['missing_genes']}</td>
-                    <td>{file_data['loci_version']}</td>
-                    <td>{create_open_button(filename, output, web_report_name)}</td>
-                </tr>
-            """
-        else:
-            # Optionally log or handle files that don't match the expected format
-            print(f"Warning: Filename '{filename}' does not match expected format and will be skipped.")
+            line_list = line.rstrip().split('\t')
 
             # e.g. {
             #          CPGxxx: {
@@ -126,6 +71,7 @@ def create_index_html(txt_file_paths, output, web_report_name, index_template_pa
             missing_genes[line_list[0]][line_list[1]] = line_list[2]
 
     return dict(missing_genes)
+
 
 def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> list[dict[str, str]]:
     """Reads the input file containing all details to populate into this index, returns as a list of dicts."""
@@ -161,7 +107,7 @@ def main(input_path, output, log: str):
     input_rows = read_input_rows(input_path, log_content)
 
     # Generate the index HTML content
-    index_html_content = create_index_html(txt_file_paths, web_report_name, output, index_template_path)
+    index_html_content = create_index_html(input_rows)
 
     # Write to output file
     with Path(output).open('w') as f:
@@ -171,9 +117,9 @@ def main(input_path, output, log: str):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Generate BedGraph tracks for splice site variants')
-    parser.add_argument('--txt_file_paths', help='list of html files', required=True)
-    parser.add_argument('--output', help='Root output directory', required=True)
-    parser.add_argument('--web_report_name', help='name of the dataset', required=True)
+    parser = ArgumentParser(description='Generate an Index page for all STRipy reports in a Dataset')
+    parser.add_argument('--input_txt', help='file containing all inputs to this index', required=True)
+    parser.add_argument('--output', help='Path to write the index HTML', required=True)
+    parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
     args = parser.parse_args()
-    main(args.txt_file_paths, args.output, args.web_report_name)
+    main(input_path=args.input_txt, output=args.output, log=args.logfile)
