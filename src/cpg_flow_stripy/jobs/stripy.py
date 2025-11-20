@@ -172,7 +172,7 @@ def make_stripy_reports(
             --report_type {loci_list_name} \\
             --loci_list {loci_str} \\
             --output {resource_group} \\
-            --logfile {j.log_path}
+            --log_file {j.log_path}
         """)
 
         # Get the *exact file path* from the flat dictionary
