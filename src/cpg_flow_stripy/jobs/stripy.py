@@ -98,10 +98,10 @@ def run_stripy_pipeline(
     if custom_loci_path:
         custom_loci_input = batch_instance.read_input(str(custom_loci_path))
         custom_loci_argument = f'--custom {custom_loci_input}'
-
+    locus_arg= f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists","default"]))}'
     cmd = f"""\
     cat {config_path}
-
+    
     ln -s {mounted_cram_path} {sequencing_group.id}__{sequencing_group.external_id}.cram
     ln -s {mounted_cram_index_path} {sequencing_group.id}__{sequencing_group.external_id}.crai
 
@@ -114,7 +114,7 @@ def run_stripy_pipeline(
         --logflags {j.log_path} \\
         --config {config_path} \\
         --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
-        --locus {config.config_retrieve(['stripy', 'loci_lists','default'])}
+        {locus_arg}
 
 
     if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json ]; then
