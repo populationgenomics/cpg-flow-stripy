@@ -105,12 +105,7 @@ def run_stripy_pipeline(
     if sequencing_group.pedigree.sex and str(sequencing_group.pedigree.sex).lower() != 'unknown':
         sex_argument = f'--sex {str(sequencing_group.pedigree.sex).lower()}'
 
-    # smaller configuration - we keep a list of expanded loci, and can associate each with multiple datasets
-    custom_loci_path = None
-    for path, datasets in config.config_retrieve(['stripy', 'expanded_loci']).items():
-        if dataset in datasets:
-            custom_loci_path = path
-            break
+    custom_loci_path = config.config_retrieve(['stripy','loci_lists','custom_loci_bed_file'])
 
     custom_loci_argument = ''
     if custom_loci_path:
