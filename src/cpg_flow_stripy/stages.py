@@ -8,6 +8,8 @@ from typing import Any
 
 from cpg_flow import stage, targets
 from cpg_utils import Path, config
+from cpg_utils.config import config_retrieve
+from tornado.log import access_log
 
 from cpg_flow_stripy.jobs import stripy
 from cpg_flow_stripy.utils import get_loci_lists
@@ -140,9 +142,13 @@ class MakeIndexPage(stage.DatasetStage):
         dataset_outputs_previous_stage = {
             key: value for key, value in all_outputs_previous_stage.items() if key in dataset.get_sequencing_group_ids()
         }
+        if config.config_retrieve(['workflow','access_level']) == 'test':
+            dataset_name=f'{dataset.name}-test'
+        else:
+            dataset_name=dataset.name
 
         job = stripy.make_index_page(
-            dataset_name=dataset.name,
+            dataset_name=dataset_name,
             inputs=dataset_outputs_previous_stage,
             output=outputs['index'],
             all_reports=str(dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt'),
