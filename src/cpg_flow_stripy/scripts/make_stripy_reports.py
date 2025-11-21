@@ -43,7 +43,7 @@ def main(input_json, output, report_type, loci_list, logfile: str):
     temp_data['GenotypingResults'] = subset_list
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
     temp_data['JobDetails']['TargetedLoci'] = loci_list
-
+    temp_data['JobDetails']['MissingGenes'] = missing_genes
     # --- Generate HTML Output ---
     # This script writes the final HTML to the --output path
     with (
@@ -53,10 +53,8 @@ def main(input_json, output, report_type, loci_list, logfile: str):
         for line in results_html_template:
             # double replace, single write
             output_html_file.write(
-                line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4)).replace(
-                    '/*MissingGenesJSON*/', json.dumps(missing_genes, indent=4)
+                line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4))
                 )
-            )
 
     print(f'  HTML file generated: {output}')
 

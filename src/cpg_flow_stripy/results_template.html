@@ -318,7 +318,9 @@
 
 								  <dt class="col-sm-2">Targeted loci:</dt>
 								  <dd class="col-sm-10" id="TargetedLoci"></dd>
-
+								<!-- Genes Not Found Section -->
+									<dt id="genes-not-found" class="col-sm-2">Loci Not Found</dt>
+									<dd class="col-sm-10" id="MissingGenes"></dd>
 								</dl>
 							</div>
 							<div class="col-10 text-right"><span id="flagIcon"></span></div>
@@ -350,6 +352,16 @@
 				$('#results_page' + page_no + ' #SampleSex').html(data.JobDetails.SampleSex)
 				$('#results_page' + page_no + ' #ReferenceGenome').html(data.JobDetails.Reference.Genome)
 				$('#results_page' + page_no + ' #ReferenceFile').html(data.JobDetails.Reference.File)
+
+				var missingGenes = data.JobDetails.MissingGenes.join("")
+				if (missingGenes.length == 0) {
+					$('#results_page' + page_no + ' #genes-not-found').hide()
+				}
+				else {
+					$('#results_page' + page_no + ' #MissingGenes').html(missingGenes)
+
+				}
+
 
 				lociresultsHeader = `
 					<div class="row mx-0">
@@ -460,19 +472,6 @@
 												  <dt class="col-40">Allele is a population outlier:</dt>
 												  <dd class="col-60">${is_population_outlier.join("/")} (Z-score: ${population_zscore.join("/")})</dd>
 												</dl>
-
-												<!-- Genes Not Found Section -->
- 											    <div id="genes-not-found-${i}" class="mt-3" style="display: none;">
-         										 <h6 class="text-warning">
-            										<i class="fas fa-exclamation-triangle me-2"></i>
-            										  Genes Not Found
-          											</h6>
-          											<div class="alert alert-warning py-2">
-            										<ul id="missing-genes-list-${i}" class="mb-0 ps-3">
-             										 /*MissingGenesJSON*/
-            										</ul>
-          											</div>
-        											</div>
 
 												<dl class="row my-0">
 												  <dt class="col-40">Repeats in fl. & sp. reads:</dt>
