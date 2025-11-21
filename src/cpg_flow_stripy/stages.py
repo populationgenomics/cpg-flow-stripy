@@ -51,10 +51,12 @@ class RunStripy(stage.SequencingGroupStage):
     """
 
     def expected_outputs(self, sequencing_group: targets.SequencingGroup) -> dict[str, Path]:
+        web_prefix = sequencing_group.dataset.web_prefix()
         analysis_prefix = sequencing_group.dataset.analysis_prefix()
         return {
             'json': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.json',
             'log': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.log.txt',
+            'html': web_prefix / 'stripy' / f'{sequencing_group.id}.global_stripy.html',
         }
 
     def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
