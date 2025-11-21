@@ -128,13 +128,9 @@ def run_stripy_pipeline(
         touch {j.json_path}
     fi
 
-    if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.global_stripy.html ]; then
-        cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.global_stripy.html {j.html_path}
+    if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.html ]; then
+        cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.html {j.html_path}
     else
-        touch {j.html_path}
-    fi
-
-    if [ ! -f {j.html_path} ]; then
         touch {j.html_path}
     fi
 
