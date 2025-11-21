@@ -52,9 +52,7 @@ def main(input_json, output, report_type, loci_list, logfile: str):
     ):
         for line in results_html_template:
             # double replace, single write
-            output_html_file.write(
-                line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4))
-                )
+            output_html_file.write(line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4)))
 
     print(f'  HTML file generated: {output}')
 

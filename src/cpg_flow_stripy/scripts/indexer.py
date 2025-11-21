@@ -1,3 +1,4 @@
+import re
 from argparse import ArgumentParser
 from collections import defaultdict
 
@@ -6,7 +7,7 @@ from importlib import resources
 from pathlib import Path
 
 from cpg_utils import config
-import re
+
 
 def create_open_button(gcs_browser_url: str) -> str:
     """
