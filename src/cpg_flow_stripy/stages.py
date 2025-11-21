@@ -14,14 +14,11 @@ from cpg_flow_stripy.utils import get_loci_lists
 
 
 def _update_meta(output_path: str) -> dict[str, Any]:
-    """
-    Add the detected outlier loci to the analysis meta
-    """
+    """Add the detected outlier loci to the analysis meta."""
     from cloudpathlib.anypath import to_anypath  # noqa: PLC0415
 
-    # Munge html path into log path (As far as I can know I can not pass to
-    # output paths to one analysis object?)
-    log_path = output_path.replace('-web/', '-analysis/').replace('.html', '.log.txt')
+    # Munge JSON path into log path
+    log_path = output_path.replace('.json', '.log.txt')
 
     outlier_loci = {}
     with to_anypath(log_path).open() as f:
