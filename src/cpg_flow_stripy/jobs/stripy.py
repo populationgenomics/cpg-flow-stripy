@@ -127,6 +127,16 @@ def run_stripy_pipeline(
     else
         touch {j.json_path}
     fi
+    
+    if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.global_stripy.html ]; then
+        cp $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.global_stripy.html {j.html_path}
+    else
+        touch {j.html_path}
+    fi
+    
+    if [ ! -f {j.html_path} ]; then
+        touch {j.html_path}
+    fi
 
     if [ ! -f {j.log_path} ]; then
         touch {j.log_path}
@@ -137,6 +147,7 @@ def run_stripy_pipeline(
 
     batch_instance.write_output(j.log_path, outputs['log'])
     batch_instance.write_output(j.json_path, outputs['json'])
+    batch_instance.write_output(j.html_path, outputs['html'])
 
     return j
 
