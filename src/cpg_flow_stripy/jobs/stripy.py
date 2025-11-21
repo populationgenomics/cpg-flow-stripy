@@ -149,7 +149,7 @@ def make_stripy_reports(
 ) -> 'BashJob':
     """
     Makes HTML reports for STRipy results using the all-in-one
-    subsetting_jsons.py script inside an Exomiser-configured job.
+    make_stripy_reports.py script inside an Exomiser-configured job.
     """
     loci_lists = get_loci_lists(sequencing_group.dataset.name)
     batch_instance = hail_batch.get_batch()
@@ -166,7 +166,7 @@ def make_stripy_reports(
         # --- Job Command (SINGLE STEP) ---
         # Runs your script, telling it to write to the local VM path
         j.command(f"""
-            python3 -m cpg_flow_stripy.scripts.subsetting_jsons \\
+            python3 -m cpg_flow_stripy.scripts.make_stripy_reports \\
             --input_json {input_json} \\
             --report_type {loci_list_name} \\
             --loci_list {loci_str} \\
@@ -236,6 +236,7 @@ def make_index_page(
     j.command(f"""
         python3 -m cpg_flow_stripy.scripts.indexer \\
         --input_txt {mega_input_file} \\
+        --dataset_name {dataset_name} \\
         --output {j.index} \\
         --logfile {j.biglog}
     """)

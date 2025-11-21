@@ -6,7 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 from cpg_utils import config
-
+import re
 
 def create_open_button(gcs_browser_url: str) -> str:
     """
@@ -24,11 +24,12 @@ def create_open_button(gcs_browser_url: str) -> str:
     """
 
 
-def create_index_html(input_rows: list[dict[str, str]]) -> str:
+def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> str:
     """Build consolidated index HTML referencing all HTML files listed in the txt file."""
 
     # Generate table rows
     table_rows = ''
+    dataset_title = re.sub(r'[-_]', ' ', dataset_name).title()
     for each_dict in input_rows:
         table_rows += f"""
             <tr>
@@ -42,7 +43,8 @@ def create_index_html(input_rows: list[dict[str, str]]) -> str:
 
     # Replace placeholder with actual rows
     with resources.open_text('cpg_flow_stripy', 'index_template.html') as template:
-        return template.read().replace('<!-- ROWS_WILL_BE_INSERTED_HERE -->', table_rows)
+        modified_content = template.read().replace('<!-- ROWS_WILL_BE_INSERTED_HERE -->', table_rows)
+        return modified_content.replace('---Dataset---', dataset_title)
 
 
 def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
@@ -100,14 +102,14 @@ def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> lis
     return all_details
 
 
-def main(input_path, output, log: str):
+def main(input_path, dataset_name: str, output, log: str):
     """Main function to generate the index HTML file."""
 
     log_content = digest_logging(log)
     input_rows = read_input_rows(input_path, log_content)
 
     # Generate the index HTML content
-    index_html_content = create_index_html(input_rows)
+    index_html_content = create_index_html(input_rows, dataset_name)
 
     # Write to output file
     with Path(output).open('w') as f:
@@ -119,7 +121,8 @@ def main(input_path, output, log: str):
 if __name__ == '__main__':
     parser = ArgumentParser(description='Generate an Index page for all STRipy reports in a Dataset')
     parser.add_argument('--input_txt', help='file containing all inputs to this index', required=True)
+    parser.add_argument('--dataset_name', help='dataset name', required=True)
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
     args = parser.parse_args()
-    main(input_path=args.input_txt, output=args.output, log=args.logfile)
+    main(input_path=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)
