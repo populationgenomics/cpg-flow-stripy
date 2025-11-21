@@ -5,7 +5,6 @@ Create Hail Batch jobs to run STRipy
 import json
 from typing import TYPE_CHECKING
 
-import hailtop.batch as hb
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
 from metamist.graphql import gql, query
@@ -56,7 +55,7 @@ def run_stripy_pipeline(
     sequencing_group: targets.SequencingGroup,
     outputs: dict[str, Path],
     job_attrs: dict,
-) -> hb.batch.job.Job:
+) -> 'BashJob':
     """
     Run STRipy
     """
@@ -196,9 +195,7 @@ def make_index_page(
     all_reports: str,
     job_attrs: dict,
 ) -> 'BashJob':
-    """
-    Makes an index HTML page linking to all STRipy reports for a sequencing group.
-    """
+    """Makes an index HTML page linking to all STRipy reports for a Dataset."""
     batch_instance = hail_batch.get_batch()
 
     j = batch_instance.new_bash_job(name=f'Make STRipy index page for {dataset_name}', attributes=job_attrs)
