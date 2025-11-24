@@ -18,7 +18,8 @@ analysis_type = "extended"
 # Update the stripy config.json file, default found here:
 # https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/config.json?ref_type=heads
 [stripy.config]
+output_svg_flag_threshold = 1
 log_flag_threshold = -1
-output_html = false
+output_html = true
 output_json = true
 verbose = true

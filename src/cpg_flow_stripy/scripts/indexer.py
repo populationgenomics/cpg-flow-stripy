@@ -36,6 +36,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
             <tr>
                 <td>{each_dict['cpg_id']}</td>
                 <td>{each_dict['family_id']}</td>
+                <td>{each_dict['external_id']}</td>
                 <td>{each_dict['subset']}</td>
                 <td>{each_dict['missing_genes']}</td>
                 <td>{create_open_button(each_dict['html_path'])}</td>
@@ -48,7 +49,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
         return modified_content.replace('---Dataset---', dataset_title)
 
 
-def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
+def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, str]]:
     """
     Takes a path to a TSV containing the logging details (Loci which were not present during locus subsetting)
     Extracts out the missing loci (if any) which were present for each sample / report subset combination
@@ -56,6 +57,7 @@ def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
     This parsing could be tidied up a lot
     """
     missing_genes: dict[str, dict[str, str]] = defaultdict(dict)
+    external_id_dict: dict[str, str] = {}
     with open(log_path) as f:
         for line in f:
             # skip empty lines
@@ -63,7 +65,7 @@ def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
                 continue
 
             line_list = line.rstrip().split('\t')
-
+            external_id = line_list[2]
             # e.g. {
             #          CPGxxx: {
             #              report_type_1: "gene1,gene2,gene3",
@@ -71,12 +73,15 @@ def digest_logging(log_path: str) -> dict[str, dict[str, str]]:
             #          },
             #      ...
             #      }
-            missing_genes[line_list[0]][line_list[1]] = line_list[2]
+            missing_genes[line_list[0]][line_list[1]] = line_list[3]
+            external_id_dict[line_list[0]] = external_id
 
-    return dict(missing_genes)
+    return dict(missing_genes), dict(external_id_dict)
 
 
-def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> list[dict[str, str]]:
+def read_input_rows(
+    input_path: str, log_data: dict[str, dict[str, str]], external_id_dict: dict[str, str]
+) -> list[dict[str, str]]:
     """Reads the input file containing all details to populate into this index, returns as a list of dicts."""
     all_details: list[dict[str, str]] = []
     with open(input_path) as f:
@@ -84,9 +89,11 @@ def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> lis
             line_list = line.rstrip().split('\t')
             cpg_id = line_list[0]
             subset = line_list[2]
+            external_id = external_id_dict[cpg_id]
 
             line_dict = {
                 'cpg_id': cpg_id,
+                'external_id': external_id,
                 'family_id': line_list[1],
                 'subset': subset,
                 'html_path': line_list[3],
@@ -106,8 +113,8 @@ def read_input_rows(input_path: str, log_data: dict[str, dict[str, str]]) -> lis
 def main(input_path, dataset_name: str, output, log: str):
     """Main function to generate the index HTML file."""
 
-    log_content = digest_logging(log)
-    input_rows = read_input_rows(input_path, log_content)
+    log_content, external_id_dict = digest_logging(log)
+    input_rows = read_input_rows(input_path, log_content, external_id_dict)
 
     # Generate the index HTML content
     index_html_content = create_index_html(input_rows, dataset_name)

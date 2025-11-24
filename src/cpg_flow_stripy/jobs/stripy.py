@@ -160,6 +160,7 @@ def make_stripy_reports(
     """
     loci_lists = get_loci_lists(sequencing_group.dataset.name)
     batch_instance = hail_batch.get_batch()
+    external_id = sequencing_group.external_id
 
     j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
@@ -176,6 +177,7 @@ def make_stripy_reports(
             python3 -m cpg_flow_stripy.scripts.make_stripy_reports \\
             --input_json {input_json} \\
             --report_type {loci_list_name} \\
+            --external_id {external_id} \\
             --loci_list {loci_str} \\
             --output {resource_group} \\
             --log_file {j.log_path}

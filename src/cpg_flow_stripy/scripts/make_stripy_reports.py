@@ -6,7 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 
-def main(input_json, output, report_type, loci_list, logfile: str):
+def main(input_json, output, external_id, report_type, loci_list, logfile: str):
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]
@@ -27,9 +27,9 @@ def main(input_json, output, report_type, loci_list, logfile: str):
     # log the missing genes
     with open(logfile, 'a') as handle:
         if missing_genes:
-            handle.write(f'{sample_id}\t{report_type}\t{",".join(missing_genes)}\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{",".join(missing_genes)}\n')
         else:
-            handle.write(f'{sample_id}\t{report_type}\tNone\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\tNone\n')
 
     print(f'  Available loci in input JSON: {list_of_available_genes}')
     print(f'  Missing loci for this report: {missing_genes}')
@@ -61,8 +61,9 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Generate html reports for STRipy by subsetting full JSON results')
     parser.add_argument('--input_json', help='Path to stripy output json', required=True)
     parser.add_argument('--output', help='Output path for the final HTML file', required=True)
+    parser.add_argument('--external_id', help='log external id', required=True)
     parser.add_argument('--report_type', help='report type', required=True)
     parser.add_argument('--loci_list', help='string_list_of_loci', required=True, nargs='+')
     parser.add_argument('--log_file', help='path to log missing loci to', required=True)
     args = parser.parse_args()
-    main(args.input_json, args.output, args.report_type, args.loci_list, logfile=args.log_file)
+    main(args.input_json, args.output, args.external_id, args.report_type, args.loci_list, logfile=args.log_file)

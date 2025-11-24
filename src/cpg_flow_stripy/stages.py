@@ -56,7 +56,7 @@ class RunStripy(stage.SequencingGroupStage):
         return {
             'json': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.json',
             'log': analysis_prefix / 'stripy' / f'{sequencing_group.id}.stripy.log.txt',
-            'html': web_prefix / 'stripy' / f'{sequencing_group.id}.global_stripy.html',
+            'html': web_prefix / 'stripy' / f'{sequencing_group.id}.stripy.html',
         }
 
     def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:
