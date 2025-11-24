@@ -51,7 +51,7 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
             flag_status = details_dict.get('Flag')
 
             # You can add conditional logic here, e.g., to check for non-zero flags
-            if flag_status >= subset_svg_flag and 'SVG' in details_dict:
+            if flag_status < subset_svg_flag and 'SVG' in details_dict:
                 del details_dict['SVG']
 
     temp_data['GenotypingResults'] = genotyping_results
