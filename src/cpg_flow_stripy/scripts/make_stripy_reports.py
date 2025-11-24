@@ -6,7 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 
-def main(input_json, output, external_id, report_type, loci_list, logfile: str):
+def main(input_json, output, external_id, report_type, loci_list, subset_svg_flag: int, logfile: str):
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]
@@ -41,6 +41,20 @@ def main(input_json, output, external_id, report_type, loci_list, logfile: str):
     # Create a temporary copy for this report type's results
     temp_data = data.copy()
     temp_data['GenotypingResults'] = subset_list
+
+    genotyping_results = temp_data['GenotypingResults']
+    for locus_item in genotyping_results:
+        # Each locus_item is a dictionary with one key (the Locus ID)
+        # Use .items() to get the (key, value) pair. Since there's only one,
+        # the loop will run exactly once per item.
+        for _locus_id, details_dict in locus_item.items():
+            flag_status = details_dict.get('Flag')
+
+            # You can add conditional logic here, e.g., to check for non-zero flags
+            if flag_status >= subset_svg_flag and 'SVG' in details_dict:
+                del details_dict['SVG']
+
+    temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
     temp_data['JobDetails']['TargetedLoci'] = loci_list
     temp_data['JobDetails']['MissingGenes'] = missing_genes
@@ -65,5 +79,14 @@ if __name__ == '__main__':
     parser.add_argument('--report_type', help='report type', required=True)
     parser.add_argument('--loci_list', help='string_list_of_loci', required=True, nargs='+')
     parser.add_argument('--log_file', help='path to log missing loci to', required=True)
+    parser.add_argument('--subset_svg_flag', help='default=1 0 for all loci 1 for flagged', required=True, type=int)
     args = parser.parse_args()
-    main(args.input_json, args.output, args.external_id, args.report_type, args.loci_list, logfile=args.log_file)
+    main(
+        args.input_json,
+        args.output,
+        args.external_id,
+        args.report_type,
+        args.loci_list,
+        args.subset_svg_flag,
+        logfile=args.log_file,
+    )

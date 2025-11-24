@@ -391,11 +391,11 @@
 					if (genotypingResults[i][locusID].Flag > 0) {
 						lociresults += `
 									<div class="flag-top-corner">
-										<img src="data:image/svg+xml;base64,${icon_flag}" class="icon ${flagClass}">
+										<img src="data:image/svg+xml;base64,${icon_flag}" class="icon ${flagClass}" loading="lazy">
 									</div>`
 					}
 
-					let stripy_db_link = (isCustom ? '' : `<sup data-toggle="tooltip" title="Link to STRipy's database"><a href="https://stripy.org/database/${locusData.LocusID}" target="_blank"><img src="data:image/svg+xml;base64,${icon_external_link}" class="icon icon-size-tiny icon-color-link"></a></sup>`)
+					let stripy_db_link = (isCustom ? '' : `<sup data-toggle="tooltip" title="Link to STRipy's database"><a href="https://stripy.org/database/${locusData.LocusID}" target="_blank"><img src="data:image/svg+xml;base64,${icon_external_link}" class="icon icon-size-tiny icon-color-link"  loading="lazy"></a></sup >`)
 					lociresults += `<div class="col-12 my-auto">
 										<span class="locusID">${locusData.LocusID}</span> ${stripy_db_link}
 									</div>
@@ -442,7 +442,7 @@
 						let diseaseTooltip = `Normal range is ${normalRangeText}${intermediateRangeText} and pathogenic cut-off is ${diseasesData.PathogenicCutoff} repeats. Inheritance: ${inheritance[diseasesData.Inheritance]}.`
 
 						if (diseasesData.DiseaseName != "NA") {
-							var disease_additional = (isCustom ? '' : `(${diseasesData.DiseaseSymbol})</span> <sup data-toggle="tooltip" title="Link to OMIM"><a href="https://omim.org/entry/${diseasesData.DiseaseOMIM}" target="_blank"><img src="data:image/svg+xml;base64,${icon_external_link}" class="icon icon-size-tiny icon-color-link"></a></sup>`)
+							var disease_additional = (isCustom ? '' : `(${diseasesData.DiseaseSymbol})</span> <sup data-toggle="tooltip" title="Link to OMIM"><a href="https://omim.org/entry/${diseasesData.DiseaseOMIM}" target="_blank"><img src="data:image/svg+xml;base64,${icon_external_link}" class="icon icon-size-tiny icon-color-link"  loading="lazy"></a></sup> `)
 
 							lociresults += `<div><span class="locusDisease" data-toggle="tooltip" data-placement="left" title="${diseaseTooltip}">${diseasesData.DiseaseName} ${disease_additional}</div>`
 						}
@@ -502,7 +502,7 @@
 						</div>
 						<div id="collapse_${locusData.LocusID}_${i}"
 							<div class="collapse card-body">
-								<img src="data:image/svg+xml;base64,${icon_print}" class="icon icon-print" id="print-${locusData.LocusID}_${i}" data-toggle="tooltip" title="Print results of this locus">
+								<img src="data:image/svg+xml;base64,${icon_print}" class="icon icon-print" id="print-${locusData.LocusID}_${i}" data-toggle="tooltip" title="Print results of this locus" loading="lazy">
 								<div class="locusMetadata mx-2 pl-2">
 									<div class="row mx-1 justify-content-center">
 										<div class="col-${locres_col_width[0]}">

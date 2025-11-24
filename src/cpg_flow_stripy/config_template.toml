@@ -14,7 +14,7 @@ stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5_ee44
 [stripy]
 # Analysis_type can be "standard" (fast) or "extended" (marginally slower but also uses unmapped reads for genotying)
 analysis_type = "extended"
-
+subset_svg_flag_threshold = 1
 # Update the stripy config.json file, default found here:
 # https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/config.json?ref_type=heads
 [stripy.config]

@@ -180,7 +180,8 @@ def make_stripy_reports(
             --external_id {external_id} \\
             --loci_list {loci_str} \\
             --output {resource_group} \\
-            --log_file {j.log_path}
+            --log_file {j.log_path} \\
+            --subset_svg_flag {config.config_retrieve(['stripy', 'subset_svg_flag_threshold'], 1)} \\
         """)
 
         # Get the *exact file path* from the flat dictionary
