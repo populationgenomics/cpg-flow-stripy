@@ -36,8 +36,8 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
             <tr>
                 <td>{each_dict['cpg_id']}</td>
                 <td>{each_dict['family_id']}</td>
-                <td>{each_dict['external_id']}</td>
                 <td>{each_dict['external_participant_id']}</td>
+                <td>{each_dict['external_id']}</td>
                 <td>{each_dict['subset']}</td>
                 <td>{each_dict['missing_genes']}</td>
                 <td>{create_open_button(each_dict['html_path'])}</td>
