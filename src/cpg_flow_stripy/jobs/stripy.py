@@ -262,8 +262,9 @@ def make_index_page(
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
         # must find a family ID for this CPG ID
-        fam_id = cpg_fam_mapping[cpg_id][0]
-        external_id = cpg_fam_mapping[cpg_id][1]
+        id_list= cpg_fam_mapping[cpg_id]
+        fam_id = id_list[0]
+        external_id = id_list[1]
 
         for report_type, report_path in output_dict.items():
             # substitute the report HTML path for a proxy-rendered path
