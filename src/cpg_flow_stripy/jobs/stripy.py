@@ -28,27 +28,62 @@ query Pedigree($project: String!) {
           families {
             externalId
           }
+          externalId
         }
       }
     }
   }
-}""",
+}
+""",
 )
 
 
-def get_cpg_to_family_mapping(dataset: str) -> dict[str, str]:
-    """Get the CPG ID to external Family ID mapping for all members of this dataset, cached per dataset."""
+
+def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
+    """
+    Creates a dictionary where the key is the CPG ID and the value is a
+    list containing the Family ID and the Participant External ID.
+
+    Args:
+        data (dict): The dictionary containing the query result structure.
+
+    Returns:
+        dict: A dictionary mapping CPG IDs to a list of [Family ID, Participant External ID].
+    """
 
     # when run in test we need to manually edit the dataset used in this query
-    query_dataset = dataset
+    query_dataset = data
     if config.config_retrieve(['workflow', 'access_level']) == 'test' and 'test' not in query_dataset:
         query_dataset += '-test'
 
     result = query(PEDIGREE_QUERY, variables={'project': query_dataset})
-    return {
-        entry['id']: entry['sample']['participant']['families'][0]['externalId']
-        for entry in result['project']['sequencingGroups']
-    }
+    id_map = {}
+
+    # Safely navigate to the list of sequencing groups
+    try:
+        sequencing_groups = result['data']['project']['sequencingGroups']
+    except (KeyError, TypeError):
+        print('Error: The provided data structure is not as expected.')
+        return id_map
+
+    for group in sequencing_groups:
+        cpg_id = group.get('id')
+
+        # Safely extract the other two IDs
+        try:
+            # The Family ID is nested in families[0]['externalId']
+            family_id = group['sample']['participant']['families'][0]['externalId']
+            # The Participant External ID is nested in participant['externalId']
+            participant_external_id = group['sample']['participant']['externalId']
+
+            if cpg_id:
+                # Populate the dictionary
+                id_map[cpg_id] = [family_id, participant_external_id]
+
+        except (KeyError, IndexError, TypeError) as e:
+            continue
+
+    return id_map
 
 
 def run_stripy_pipeline(
@@ -227,12 +262,13 @@ def make_index_page(
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
         # must find a family ID for this CPG ID
-        fam_id = cpg_fam_mapping[cpg_id]
+        fam_id = cpg_fam_mapping[cpg_id][0]
+        external_id = cpg_fam_mapping[cpg_id][1]
 
         for report_type, report_path in output_dict.items():
             # substitute the report HTML path for a proxy-rendered path
             corrected_path = str(report_path).replace(file_prefix, html_prefix)
-            collected_lines.append(f'{cpg_id}\t{fam_id}\t{report_type}\t{corrected_path}')
+            collected_lines.append(f'{cpg_id}\t{fam_id}\t{external_id}\t{report_type}\t{corrected_path}')
 
     # write all reports to a single temp file, instead of passing an arbitrary number of CLI/script arguments
     with to_path(all_reports).open('w') as f:

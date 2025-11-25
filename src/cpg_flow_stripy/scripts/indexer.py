@@ -37,6 +37,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
                 <td>{each_dict['cpg_id']}</td>
                 <td>{each_dict['family_id']}</td>
                 <td>{each_dict['external_id']}</td>
+                <td>{each_dict['external_participant_id']}</td>
                 <td>{each_dict['subset']}</td>
                 <td>{each_dict['missing_genes']}</td>
                 <td>{create_open_button(each_dict['html_path'])}</td>
@@ -88,15 +89,16 @@ def read_input_rows(
         for line in f:
             line_list = line.rstrip().split('\t')
             cpg_id = line_list[0]
-            subset = line_list[2]
+            subset = line_list[3]
             external_id = external_id_dict[cpg_id]
 
             line_dict = {
                 'cpg_id': cpg_id,
                 'external_id': external_id,
                 'family_id': line_list[1],
+                'external_participant_id': line_list[2],
                 'subset': subset,
-                'html_path': line_list[3],
+                'html_path': line_list[4],
                 'missing_genes': '',
             }
 
