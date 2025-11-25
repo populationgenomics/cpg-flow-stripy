@@ -56,7 +56,7 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
         query_dataset += '-test'
 
     result = query(PEDIGREE_QUERY, variables={'project': query_dataset})
-    id_map = {}
+    id_map: dict[str, list[str]] = {}
 
     # Safely navigate to the list of sequencing groups
     try:
@@ -69,18 +69,14 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
         cpg_id = group.get('id')
 
         # Safely extract the other two IDs
-        try:
-            # The Family ID is nested in families[0]['externalId']
-            family_id = group['sample']['participant']['families'][0]['externalId']
-            # The Participant External ID is nested in participant['externalId']
-            participant_external_id = group['sample']['participant']['externalId']
+        # The Family ID is nested in families[0]['externalId']
+        family_id = group['sample']['participant']['families'][0]['externalId']
+        # The Participant External ID is nested in participant['externalId']
+        participant_external_id = group['sample']['participant']['externalId']
 
-            if cpg_id:
-                # Populate the dictionary
-                id_map[cpg_id] = [family_id, participant_external_id]
-
-        except (KeyError, IndexError, TypeError) as e:
-            continue
+        if cpg_id:
+            # Populate the dictionary
+            id_map[cpg_id] = [family_id, participant_external_id]
 
     return id_map
 
