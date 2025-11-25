@@ -38,7 +38,6 @@ query Pedigree($project: String!) {
 )
 
 
-
 def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
     """
     Creates a dictionary where the key is the CPG ID and the value is a
@@ -61,7 +60,7 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
 
     # Safely navigate to the list of sequencing groups
     try:
-        sequencing_groups = result['data']['project']['sequencingGroups']
+        sequencing_groups = result['project']['sequencingGroups']
     except (KeyError, TypeError):
         print('Error: The provided data structure is not as expected.')
         return id_map
@@ -262,7 +261,7 @@ def make_index_page(
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
         # must find a family ID for this CPG ID
-        id_list= cpg_fam_mapping[cpg_id]
+        id_list: list[str] = cpg_fam_mapping[cpg_id]
         fam_id = id_list[0]
         external_id = id_list[1]
 
