@@ -95,8 +95,8 @@ def read_input_rows(
             line_dict = {
                 'cpg_id': cpg_id,
                 'external_id': external_id,
-                'family_id': line_list[1],
                 'external_participant_id': line_list[2],
+                'family_id': line_list[1],
                 'subset': subset,
                 'html_path': line_list[4],
                 'missing_genes': '',
