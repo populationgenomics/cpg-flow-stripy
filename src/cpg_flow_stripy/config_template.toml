@@ -1,6 +1,4 @@
 [workflow]
-name = 'stripy'
-
 input_cohorts = []
 sequencing_type = 'genome'
 
@@ -11,51 +9,17 @@ check_expected_outputs = true
 status_reporter = 'metamist'
 
 [images]
-stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5"
+stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5_ee4482bc-1"
 
 [stripy]
 # Analysis_type can be "standard" (fast) or "extended" (marginally slower but also uses unmapped reads for genotying)
 analysis_type = "extended"
-
-# this section should be tidied up before this workflow is used in anger
-# See https://gitlab.com/andreassh/stripy-pipeline#list-of-loci
-target_loci = """ABCD3,AFF2,AR,ARX_1,ARX_2,ATN1,ATXN1,ATXN10,ATXN2,ATXN3,ATXN7,ATXN8OS,\
-#BEAN1,CACNA1A,CBL,CNBP,COMP,CSTB,DAB1,DIP2B,DMD,DMPK,EIF4A3,FGF14,FMR1,FOXL2,FXN,GIPC1,\
-#GLS,HOXA13_1,HOXA13_2,HOXA13_3,HOXD13,JPH3,LRP12,MARCHF6,NIPA1,NOP56,NOTCH2NLC,\
-#NUTM2B-AS1,PABPN1,PHOX2B,PPP2R2B,PRDM12,RAPGEF2,RFC1,RILPL1,RUNX2,SAMD12,SOX3,\
-#STARD7,TBP,TBX1,TCF4,THAP11,TNRC6A,VWA1,XYLT1,YEATS2,ZFHX3,ZIC2,ZIC3,C9orf72,HTT"""
-
-# To target a subset of loci for a specific dataset, use like this:
-# all_loci = config.config_retrieve(['stripy', 'dataset_target_loci'])
-# dataset_loci = all_loci.get(DATASET, all_loci['default'])... maybe, idk
-# this applies to a stage which had not been implemented yet
-[stripy.dataset_target_loci]
-# DATASET = "ABCDE,FGHIJ,KLMNO,PQRST,UVWXY,Z..."
-
-# Excluded by default: C9orf72, HTT
-# default
-
-# Change the path the stripy report is saved to, useful when testing novel loci
-output_prefix = "stripy"
-
+subset_svg_flag_threshold = 1
 # Update the stripy config.json file, default found here:
 # https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/config.json?ref_type=heads
 [stripy.config]
+output_svg_flag_threshold = 1
 log_flag_threshold = -1
+output_html = true
 output_json = true
 verbose = true
-
-# Path to bed+ file containing extra loci to include in the analysis. Tab-delimited BED
-# file containing at least the following four values: chromosome, start and end position
-# of the STR locus and motif on the plus strand. Optionally, the locus name/ID can be
-# specified as fifth value. Additionally, you can also specify disease name, inheritance,
-# normal range and pathogenic cut-off values which are then being used to colourise
-# results e.g.:
-# https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/examples/vntr.bed
-
-# this block contains one entry for each bed file, with the path as the key
-# the value is then a list of datasets which should use that bed file, reducing lines required in the file, and making
-# it easy to see at a glance which datasets share custom loci
-[stripy.expanded_loci]
-"gs://cpg-seqr-test-upload/stripy/230913_all_projects_extra_loci.bed" = []
-"gs://cpg-seqr-test-upload/stripy2/stripy/230913_neuro_extra_loci.bed" = []
