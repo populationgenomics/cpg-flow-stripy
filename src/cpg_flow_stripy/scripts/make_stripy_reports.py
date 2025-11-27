@@ -1,50 +1,48 @@
+import copy
 import json
 from argparse import ArgumentParser
-import copy
+
 # used to navigate from the installed location of this package to the HTML template file
 from importlib import resources
 from pathlib import Path
 
 DEFAULT_REPORT_SCHEMA = {
-    "GenotypingResults": [
+    'GenotypingResults': [
         {
-            "DefaultGeneTemplate": { # Use a generic key to represent the dynamic gene name
-                "Metadata": {
-                    "HighestPathRepeatsInFlanking": {},
-                    "TotalOfFlankingReads": [],
-                    "TotalOfInrepeatReads": [],
-                    "TotalOfSpanningReads": []
+            'DefaultGeneTemplate': {  # Use a generic key to represent the dynamic gene name
+                'Metadata': {
+                    'HighestPathRepeatsInFlanking': {},
+                    'TotalOfFlankingReads': [],
+                    'TotalOfInrepeatReads': [],
+                    'TotalOfSpanningReads': [],
                 },
-                "TargetedLocus": {
-                    "LocusID": "N/A",
-                    "Coordinates": "N/A",
-                    "Motif": "N/A",
-                    "CorrespondingDisease": {
+                'TargetedLocus': {
+                    'LocusID': 'N/A',
+                    'Coordinates': 'N/A',
+                    'Motif': 'N/A',
+                    'CorrespondingDisease': {
                         # This nested structure provides the necessary keys
-                        "DefaultDiseaseEntry": {
-                            "DiseaseName": "N/A",
+                        'DefaultDiseaseEntry': {
+                            'DiseaseName': 'N/A',
                             # Using 0 as default for IntermediateRange per your request
-                            "IntermediateRange": 0,
-                            "NormalRange": {
-                                "Max": 0,
-                                "Min": 0
-                            },
-                            "PathogenicCutoff": 0,
-                            "Inheritance": "NI"
+                            'IntermediateRange': 0,
+                            'NormalRange': {'Max': 0, 'Min': 0},
+                            'PathogenicCutoff': 0,
+                            'Inheritance': 'NI',
                         }
-                    }
-                }
+                    },
+                },
             }
         }
     ],
-    "JobDetails": {
-        "TimeOfAnalysis": "N/A",
-        "InputFile": "N/A",
-        "Reference": "N/A",
-        "TargetedLoci": [],
-        "MissingGenes": [],
-        "SampleSex": "Unknown"
-    }
+    'JobDetails': {
+        'TimeOfAnalysis': 'N/A',
+        'InputFile': 'N/A',
+        'Reference': 'N/A',
+        'TargetedLoci': [],
+        'MissingGenes': [],
+        'SampleSex': 'Unknown',
+    },
 }
 
 
@@ -80,17 +78,17 @@ def deep_merge_defaults(target_dict, default_dict):
             target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
 
         # Case 3: Key exists, and both values are lists (handle list items recursively)
-        elif isinstance(target_dict[key], list) and isinstance(default_value, list):
-            if default_value:
-                # Use the first element of the default list as the merge template
-                default_template_item = default_value[0]
+        elif isinstance(target_dict[key], list) and isinstance(default_value, list) and default_value:
+            # Use the first element of the default list as the merge template
+            default_template_item = default_value[0]
 
-                # Iterate over existing items in the target list
-                for i, target_item in enumerate(target_dict[key]):
-                    # Only attempt to merge if the target item is a dictionary
-                    if isinstance(target_item, dict):
-                        # Recursively merge the target list item with the default template
-                        target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
+            # Iterate over existing items in the target list
+            for i, target_item in enumerate(target_dict[key]):
+                # Only attempt to merge if the target item is a dictionary
+                if isinstance(target_item, dict):
+                    # Recursively merge the target list item with the default template
+                    target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
+
             # If the target list was initially empty, it was handled in Case 1.
             # If both are non-empty lists, we only merge the contents of existing items.
 
