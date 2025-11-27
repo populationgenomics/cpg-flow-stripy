@@ -1,3 +1,5 @@
+# ruff: noqa: C901
+
 import copy
 import json
 from argparse import ArgumentParser
@@ -78,19 +80,39 @@ def deep_merge_defaults(target_dict, default_dict):
             target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
 
         # Case 3: Key exists, and both values are lists (handle list items recursively)
+        # Case 3: Key exists, and both values are lists (handle list items recursively)
         elif isinstance(target_dict[key], list) and isinstance(default_value, list) and default_value:
             # Use the first element of the default list as the merge template
             default_template_item = default_value[0]
+
+            # Special Logic for "DefaultGeneTemplate"
+            # If the schema uses this specific key, it indicates that the keys in the
+            # target list items are dynamic (gene names) and should mapped to this template.
+            template_content = None
+            if (
+                isinstance(default_template_item, dict)
+                and 'DefaultGeneTemplate' in default_template_item
+                and len(default_template_item) == 1
+            ):
+                template_content = default_template_item['DefaultGeneTemplate']
 
             # Iterate over existing items in the target list
             for i, target_item in enumerate(target_dict[key]):
                 # Only attempt to merge if the target item is a dictionary
                 if isinstance(target_item, dict):
-                    # Recursively merge the target list item with the default template
-                    target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
-
+                    if template_content:
+                        # Dynamic Key Strategy:
+                        # The target item has keys (e.g. "ZIC3") that match the *content*
+                        # of the template, not the template key itself.
+                        for gene_key, gene_data in target_item.items():
+                            if isinstance(gene_data, dict):
+                                # Merge the inner data (value of "ZIC3") with the inner template
+                                target_item[gene_key] = deep_merge_defaults(gene_data, template_content)
+                    else:
+                        # Standard Strategy:
+                        # Recursively merge the target list item with the default template directly.
+                        target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
             # If the target list was initially empty, it was handled in Case 1.
-            # If both are non-empty lists, we only merge the contents of existing items.
 
     return target_dict
 
