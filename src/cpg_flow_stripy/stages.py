@@ -107,11 +107,7 @@ class MakeStripyReports(stage.SequencingGroupStage):
         return self.make_outputs(sequencing_group, data=outputs, jobs=jobs)
 
 
-@stage.stage(
-    analysis_type='web',
-    analysis_keys=['index'],
-    required_stages=[MakeStripyReports],
-)
+@stage.stage(analysis_type='web', analysis_keys=['index'], required_stages=[MakeStripyReports], forced=True)
 class MakeIndexPage(stage.DatasetStage):
     """
     Create HTML reports for STRipy analysis, subsetting the full JSON results to
