@@ -455,11 +455,14 @@
 						flankingReads.push(`<strong>${key}</strong><sub>(${value})</sub>`)
 					}
 
-					var fullyRepSources = []
-					for (const [key, value] of Object.entries(genotypingResults[i][locusID]["Metadata"].FullyRepeatedReadSources)) {
-						let rep_source = `<strong>${value.Coordinates}</strong> <sub>(${value.Count} reads)</sub>`
-						if (value.Locus) rep_source += ' - ' + value.Locus
-						fullyRepSources.push(rep_source)
+					var fullyRepSourcesList = []
+					var fullyRepSources = genotypingResults[i][locusID]["Metadata"].FullyRepeatedReadSources
+					if (fullyRepSources) {
+						for (const [key, value] of Object.entries(fullyRepSources)) {
+							let rep_source = `<strong>${value.Coordinates}</strong> <sub>(${value.Count} reads)</sub>`
+							if (value.Locus) rep_source += ' - ' + value.Locus
+							fullyRepSourcesList.push(rep_source)
+						}
 					}
 					if (isCustom) {
 						var locres_col_width = [30, 30, 40]
@@ -481,10 +484,10 @@
 												<dl class="row my-0">
 													<dt class="col-40">Potential loci with long repeats:</dt>
 													<dd class="col-60" style="font-size: 14px" data-id="${locusID}">
-														${fullyRepSources.length > 0 ? `
+														${fullyRepSourcesList.length > 0 ? `
 															<a href="#" class="show-link" data-id="${locusID}">Show regions</a>
 															<div class="content hidden" data-id="${locusID}">
-																${fullyRepSources.join("<br>")}
+																${fullyRepSourcesList.join("<br>")}
 															</div>
 														` : ''}
 													</dd>

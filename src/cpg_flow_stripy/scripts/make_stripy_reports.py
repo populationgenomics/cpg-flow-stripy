@@ -1,9 +1,100 @@
 import json
 from argparse import ArgumentParser
-
+import copy
 # used to navigate from the installed location of this package to the HTML template file
 from importlib import resources
 from pathlib import Path
+
+DEFAULT_REPORT_SCHEMA = {
+    "GenotypingResults": [
+        {
+            "DefaultGeneTemplate": { # Use a generic key to represent the dynamic gene name
+                "Metadata": {
+                    "HighestPathRepeatsInFlanking": {},
+                    "TotalOfFlankingReads": [],
+                    "TotalOfInrepeatReads": [],
+                    "TotalOfSpanningReads": []
+                },
+                "TargetedLocus": {
+                    "LocusID": "N/A",
+                    "Coordinates": "N/A",
+                    "Motif": "N/A",
+                    "CorrespondingDisease": {
+                        # This nested structure provides the necessary keys
+                        "DefaultDiseaseEntry": {
+                            "DiseaseName": "N/A",
+                            # Using 0 as default for IntermediateRange per your request
+                            "IntermediateRange": 0,
+                            "NormalRange": {
+                                "Max": 0,
+                                "Min": 0
+                            },
+                            "PathogenicCutoff": 0,
+                            "Inheritance": "NI"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "JobDetails": {
+        "TimeOfAnalysis": "N/A",
+        "InputFile": "N/A",
+        "Reference": "N/A",
+        "TargetedLoci": [],
+        "MissingGenes": [],
+        "SampleSex": "Unknown"
+    }
+}
+
+
+def deep_merge_defaults(target_dict, default_dict):
+    """
+    Recursively merges a target dictionary with a default schema.
+
+    If a key is missing, or its value is None, in the target_dict, it is
+    filled in from the default_dict. The function handles nested dictionaries
+    and iterates over lists of dictionaries to merge their items against
+    the first item in the default list (the schema template).
+
+    Args:
+        target_dict (dict): The dictionary to be populated (the "populated" dictionary).
+        default_dict (dict): The dictionary containing default values (the essential fields).
+
+    Returns:
+        dict: The target_dict updated with default values.
+    """
+    # Ensure we are working with dicts; otherwise, just return the target
+    if not isinstance(target_dict, dict) or not isinstance(default_dict, dict):
+        return target_dict
+
+    # Iterate over all keys and values in the default dictionary (the schema)
+    for key, default_value in default_dict.items():
+        # Case 1: Key is missing or explicitly None
+        if key not in target_dict or target_dict[key] is None:
+            # If missing/None, copy the default value.
+            target_dict[key] = copy.deepcopy(default_value)
+
+        # Case 2: Key exists, and both values are dictionaries (recurse)
+        elif isinstance(target_dict[key], dict) and isinstance(default_value, dict):
+            target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
+
+        # Case 3: Key exists, and both values are lists (handle list items recursively)
+        elif isinstance(target_dict[key], list) and isinstance(default_value, list):
+            if default_value:
+                # Use the first element of the default list as the merge template
+                default_template_item = default_value[0]
+
+                # Iterate over existing items in the target list
+                for i, target_item in enumerate(target_dict[key]):
+                    # Only attempt to merge if the target item is a dictionary
+                    if isinstance(target_item, dict):
+                        # Recursively merge the target list item with the default template
+                        target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
+            # If the target list was initially empty, it was handled in Case 1.
+            # If both are non-empty lists, we only merge the contents of existing items.
+
+    return target_dict
 
 
 def main(input_json, output, external_id, report_type, loci_list, subset_svg_flag: int, logfile: str):
@@ -58,6 +149,11 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
     temp_data['JobDetails']['TargetedLoci'] = loci_list
     temp_data['JobDetails']['MissingGenes'] = missing_genes
+
+    # --- Ensure All Required Fields are Present ---
+
+    temp_data = deep_merge_defaults(temp_data, DEFAULT_REPORT_SCHEMA)
+
     # --- Generate HTML Output ---
     # This script writes the final HTML to the --output path
     with (
