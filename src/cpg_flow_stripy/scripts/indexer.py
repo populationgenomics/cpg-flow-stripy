@@ -89,7 +89,7 @@ def read_input_rows(
         for line in f:
             line_list = line.rstrip().split('\t')
             cpg_id = line_list[0]
-            subset = line_list[3]
+            subset = re.sub(r'[-_]', ' ', line_list[3]).title()
             external_id = external_id_dict[cpg_id]
 
             line_dict = {

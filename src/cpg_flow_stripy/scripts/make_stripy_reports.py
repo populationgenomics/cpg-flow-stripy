@@ -139,7 +139,7 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
     # log the missing genes
     with open(logfile, 'a') as handle:
         if missing_genes:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{",".join(missing_genes)}\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{", ".join(missing_genes)}\n')
         else:
             handle.write(f'{sample_id}\t{report_type}\t{external_id}\tNone\n')
 
