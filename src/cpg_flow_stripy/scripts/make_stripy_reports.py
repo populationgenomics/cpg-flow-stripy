@@ -50,84 +50,70 @@ DEFAULT_REPORT_SCHEMA = {
 
 def deep_merge_defaults(target_dict, default_dict):
     """
-    Recursively merges a target dictionary with a default schema.
+    Optimized recursive merge of a target dictionary with a default schema.
 
-    If a key is missing, or its value is None, in the target_dict, it is
-    filled in from the default_dict. The function handles nested dictionaries
-    and iterates over lists of dictionaries to merge their items against
-    the first item in the default list (the schema template).
-
-    Args:
-        target_dict (dict): The dictionary to be populated (the "populated" dictionary).
-        default_dict (dict): The dictionary containing default values (the essential fields).
-
-    Returns:
-        dict: The target_dict updated with default values.
+    Includes specific logic for 'DefaultDiseaseEntry' and 'DefaultGeneTemplate'.
     """
-    # Ensure we are working with dicts; otherwise, just return the target
+    # Fast failure: if types don't match or aren't dicts, return immediately
     if not isinstance(target_dict, dict) or not isinstance(default_dict, dict):
         return target_dict
 
-    # Iterate over all keys and values in the default dictionary (the schema)
-    for key, default_value in default_dict.items():
-        # Case 1: Key is missing or explicitly None
-        if key not in target_dict or target_dict[key] is None:
-            # If missing/None, copy the default value.
-            target_dict[key] = copy.deepcopy(default_value)
+    for key, default_val in default_dict.items():
+        # Optimization: Fetch target value once to avoid multiple hash lookups
+        target_val = target_dict.get(key)
 
-        # Case 2: Key exists, and both values are dictionaries (recurse)
-        elif isinstance(target_dict[key], dict) and isinstance(default_value, dict):
-            # Special Logic for "DefaultDiseaseEntry" (Dynamic Dictionary Keys)
-            # Similar to the list logic, if the default dict contains *only* the template key,
-            # and the target dict has actual data, we apply the template to the data
-            # instead of merging the template key into the dict.
-            template_key = 'DefaultDiseaseEntry'
-            if (
-                len(default_value) == 1 and template_key in default_value and target_dict[key]
-            ):  # Target is not empty (e.g. has "DM2")
-                template_content = default_value[template_key]
-
-                # Apply the template to the existing dynamic keys (e.g. "DM2")
-                for sub_key, sub_val in target_dict[key].items():
-                    if isinstance(sub_val, dict):
-                        target_dict[key][sub_key] = deep_merge_defaults(sub_val, template_content)
+        # --- Case 1: Missing or None ---
+        if target_val is None:
+            # Optimization: Only deepcopy mutable types (dicts/lists).
+            # Primitives (int, str) are immutable and safe to assign directly.
+            if isinstance(default_val, dict | list):
+                target_dict[key] = copy.deepcopy(default_val)
             else:
-                # Standard Dictionary Merge
-                target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
+                target_dict[key] = default_val
+            continue
 
-        # Case 3: Key exists, and both values are lists (handle list items recursively)
-        elif isinstance(target_dict[key], list) and isinstance(default_value, list) and default_value:
-            # Use the first element of the default list as the merge template
-            default_template_item = default_value[0]
+        # --- Case 2: Both are Dictionaries ---
+        if isinstance(default_val, dict) and isinstance(target_val, dict):
+            # Special Logic: DefaultDiseaseEntry
+            # Check length first (O(1)) to avoid string lookup if unnecessary
+            if len(default_val) == 1 and 'DefaultDiseaseEntry' in default_val:
+                template_content = default_val['DefaultDiseaseEntry']
+                # Apply template to all dynamic sub-keys in the target
+                for _sub_key, sub_val in target_val.items():
+                    if isinstance(sub_val, dict):
+                        # Mutate in place rather than re-assigning to save overhead
+                        deep_merge_defaults(sub_val, template_content)
+            else:
+                # Standard Recursive Merge
+                deep_merge_defaults(target_val, default_val)
 
-            # Special Logic for "DefaultGeneTemplate"
-            # If the schema uses this specific key, it indicates that the keys in the
-            # target list items are dynamic (gene names) and should mapped to this template.
-            template_content = None
+        # --- Case 3: Both are Lists ---
+        elif isinstance(default_val, list) and isinstance(target_val, list) and default_val:
+            default_template = default_val[0]
+
+            # Check for Special Logic: DefaultGeneTemplate
+            # lifting the extraction of template_content out of the loop
+            inner_template = None
             if (
-                isinstance(default_template_item, dict)
-                and 'DefaultGeneTemplate' in default_template_item
-                and len(default_template_item) == 1
+                isinstance(default_template, dict)
+                and len(default_template) == 1
+                and 'DefaultGeneTemplate' in default_template
             ):
-                template_content = default_template_item['DefaultGeneTemplate']
+                inner_template = default_template['DefaultGeneTemplate']
 
-            # Iterate over existing items in the target list
-            for i, target_item in enumerate(target_dict[key]):
-                # Only attempt to merge if the target item is a dictionary
-                if isinstance(target_item, dict):
-                    if template_content:
-                        # Dynamic Key Strategy:
-                        # The target item has keys (e.g. "ZIC3") that match the *content*
-                        # of the template, not the template key itself.
-                        for gene_key, gene_data in target_item.items():
-                            if isinstance(gene_data, dict):
-                                # Merge the inner data (value of "ZIC3") with the inner template
-                                target_item[gene_key] = deep_merge_defaults(gene_data, template_content)
-                    else:
-                        # Standard Strategy:
-                        # Recursively merge the target list item with the default template directly.
-                        target_dict[key][i] = deep_merge_defaults(target_item, default_template_item)
-            # If the target list was initially empty, it was handled in Case 1.
+            # Iterate target list
+            for item in target_val:
+                if not isinstance(item, dict):
+                    continue
+
+                if inner_template:
+                    # Dynamic Key Strategy (Genes)
+                    for gene_data in item.values():
+                        if isinstance(gene_data, dict):
+                            deep_merge_defaults(gene_data, inner_template)
+                else:
+                    # Standard List Merge
+                    deep_merge_defaults(item, default_template)
 
     return target_dict
 
