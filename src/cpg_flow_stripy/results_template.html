@@ -353,7 +353,7 @@
 				$('#results_page' + page_no + ' #ReferenceGenome').html(data.JobDetails.Reference.Genome)
 				$('#results_page' + page_no + ' #ReferenceFile').html(data.JobDetails.Reference.File)
 
-				var missingGenes = data.JobDetails.MissingGenes.join("")
+				var missingGenes = data.JobDetails.MissingGenes.join(", ")
 				if (missingGenes.length == 0) {
 					$('#results_page' + page_no + ' #genes-not-found').hide()
 				}

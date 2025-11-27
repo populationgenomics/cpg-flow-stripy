@@ -1,5 +1,5 @@
 # ruff: noqa: C901
-
+# ruff: noqa: PLR0912
 import copy
 import json
 from argparse import ArgumentParser
@@ -77,9 +77,24 @@ def deep_merge_defaults(target_dict, default_dict):
 
         # Case 2: Key exists, and both values are dictionaries (recurse)
         elif isinstance(target_dict[key], dict) and isinstance(default_value, dict):
-            target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
+            # Special Logic for "DefaultDiseaseEntry" (Dynamic Dictionary Keys)
+            # Similar to the list logic, if the default dict contains *only* the template key,
+            # and the target dict has actual data, we apply the template to the data
+            # instead of merging the template key into the dict.
+            template_key = 'DefaultDiseaseEntry'
+            if (
+                len(default_value) == 1 and template_key in default_value and target_dict[key]
+            ):  # Target is not empty (e.g. has "DM2")
+                template_content = default_value[template_key]
 
-        # Case 3: Key exists, and both values are lists (handle list items recursively)
+                # Apply the template to the existing dynamic keys (e.g. "DM2")
+                for sub_key, sub_val in target_dict[key].items():
+                    if isinstance(sub_val, dict):
+                        target_dict[key][sub_key] = deep_merge_defaults(sub_val, template_content)
+            else:
+                # Standard Dictionary Merge
+                target_dict[key] = deep_merge_defaults(target_dict[key], default_value)
+
         # Case 3: Key exists, and both values are lists (handle list items recursively)
         elif isinstance(target_dict[key], list) and isinstance(default_value, list) and default_value:
             # Use the first element of the default list as the merge template
