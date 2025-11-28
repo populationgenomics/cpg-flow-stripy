@@ -90,6 +90,7 @@ def read_input_rows(
             line_list = line.rstrip().split('\t')
             cpg_id = line_list[0]
             subset = line_list[3]
+            subset_nice = re.sub(r'[-_]', ' ', line_list[3]).title()
             external_id = external_id_dict[cpg_id]
 
             line_dict = {
@@ -97,7 +98,7 @@ def read_input_rows(
                 'external_id': external_id,
                 'external_participant_id': line_list[2],
                 'family_id': line_list[1],
-                'subset': subset,
+                'subset': subset_nice,
                 'html_path': line_list[4],
                 'missing_genes': '',
             }
