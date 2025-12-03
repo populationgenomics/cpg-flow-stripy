@@ -74,6 +74,10 @@
             background-color: #f2f2f2;
             font-weight: bold;
             text-align: left;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
         }
 
         tr:nth-child(even) {
@@ -101,6 +105,24 @@
 
         button:hover {
             background-color: #45a049;
+        }
+
+        /* Sorting Arrows */
+        th::after {
+            content: ' \2195'; /* Up/Down arrow symbol */
+            opacity: 0.3;
+            position: absolute;
+            right: 5px;
+        }
+
+        th.th-sort-asc::after {
+            content: ' \2191'; /* Up arrow */
+            opacity: 1;
+        }
+
+        th.th-sort-desc::after {
+            content: ' \2193'; /* Down arrow */
+            opacity: 1;
         }
     </style>
 </head>
@@ -164,7 +186,7 @@
     </div>
 
     <div class="table-container">
-        <table>
+        <table id="sampleTable">
             <thead>
             <tr>
                 <th>Sample</th>
@@ -173,6 +195,7 @@
                 <th>External Sample ID</th>
                 <th>Report Type</th>
                 <th>Missing Loci</th>
+                <th data-type="euro-date">Stripy Run Date</th>
                 <th>Link</th>
             </tr>
             </thead>
@@ -184,40 +207,96 @@
 </div>
 
 <script>
-    // Toggle visibility button function
-
+    // --- 1. Toggle Visibility Logic ---
     function toggleTableVisibility() {
         const tableContainer = document.getElementById('lociTableContainer');
         const button = document.getElementById('toggleButton');
 
         if (tableContainer.style.display === 'none') {
-            // Show the table
             tableContainer.style.display = 'block';
-            // Change button text to Hide
             button.textContent = 'Hide Report Loci Reference Table';
         } else {
-            // Hide the table
             tableContainer.style.display = 'none';
-            // Change button text to Show
             button.textContent = 'Show Report Loci Reference Table';
         }
     }
 
-    // Get the search input element
-    const searchInput = document.getElementById('searchInput');
-    // Get all table rows from the tbody
-    const tableRows = document.querySelectorAll('tbody tr');
+    // --- 2. Sorting Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.getElementById('sampleTable');
+        const headers = table.querySelectorAll('thead th');
+        const tableBody = table.querySelector('tbody');
+        const directions = Array.from(headers).map(() => '');
 
-    // Add input event listener to the search bar
+        const transform = (index, content) => {
+            const type = headers[index].getAttribute('data-type');
+            switch (type) {
+                case 'euro-date':
+                    // Convert DD/MM/YYYY to timestamp
+                    const parts = content.split(/[\/\-\.]/);
+                    if (parts.length === 3) {
+                        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                    }
+                    return 0;
+                case 'number':
+                    return parseFloat(content);
+                default:
+                    return content.toLowerCase(); // Case insensitive sort
+            }
+        };
+
+        const sortColumn = (index) => {
+            const direction = directions[index] || 'asc';
+            const multiplier = direction === 'asc' ? 1 : -1;
+
+            // Convert NodeList to Array
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+            const newRows = rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim();
+                const cellB = rowB.children[index].textContent.trim();
+
+                const a = transform(index, cellA);
+                const b = transform(index, cellB);
+
+                if (typeof a === 'number' && typeof b === 'number') {
+                    return (a - b) * multiplier;
+                }
+                return String(a).localeCompare(String(b), undefined, { numeric: true }) * multiplier;
+            });
+
+            // Remove old rows and append new sorted rows
+            tableBody.innerHTML = '';
+            newRows.forEach(row => tableBody.appendChild(row));
+
+            // Flip direction for next click
+            directions[index] = direction === 'asc' ? 'desc' : 'asc';
+
+            // Update visual arrow classes
+            headers.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+            headers[index].classList.toggle('th-sort-asc', direction === 'asc');
+            headers[index].classList.toggle('th-sort-desc', direction === 'desc');
+        };
+
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => sortColumn(index));
+        });
+    });
+
+    // --- 3. Search Logic ---
+    // Combined and fixed to prevent duplicate declarations
+    const searchInput = document.getElementById('searchInput');
+
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
 
+        // TARGET SPECIFICALLY the sample table to avoid filtering the hidden Loci table
+        const tableRows = document.querySelectorAll('#sampleTable tbody tr');
+
         tableRows.forEach(row => {
-            // Get all cell texts in the row
             const cells = row.querySelectorAll('td');
             let found = false;
 
-            // Check if any cell contains the search term
             for (let cell of cells) {
                 if (cell.textContent.toLowerCase().includes(searchTerm)) {
                     found = true;
@@ -225,7 +304,6 @@
                 }
             }
 
-            // Show or hide the row based on whether the search term was found
             if (found) {
                 row.classList.remove('hidden');
             } else {

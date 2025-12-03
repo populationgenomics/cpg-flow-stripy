@@ -39,6 +39,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
                 <td>{each_dict['external_participant_id']}</td>
                 <td>{each_dict['external_id']}</td>
                 <td>{each_dict['subset']}</td>
+                <td>{each_dict['analysis_time']}</td>
                 <td>{each_dict['missing_genes']}</td>
                 <td>{create_open_button(each_dict['html_path'])}</td>
             </tr>
@@ -50,7 +51,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
         return modified_content.replace('---Dataset---', dataset_title)
 
 
-def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, str]]:
+def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, str], dict[str, str]]:
     """
     Takes a path to a TSV containing the logging details (Loci which were not present during locus subsetting)
     Extracts out the missing loci (if any) which were present for each sample / report subset combination
@@ -59,6 +60,7 @@ def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, 
     """
     missing_genes: dict[str, dict[str, str]] = defaultdict(dict)
     external_id_dict: dict[str, str] = {}
+    stripyanalysis_time_dict: dict[str, str] = {}
     with open(log_path) as f:
         for line in f:
             # skip empty lines
@@ -74,14 +76,18 @@ def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, 
             #          },
             #      ...
             #      }
-            missing_genes[line_list[0]][line_list[1]] = line_list[3]
+            missing_genes[line_list[0]][line_list[1]] = line_list[4]
             external_id_dict[line_list[0]] = external_id
+            stripyanalysis_time_dict[line_list[0]] = line_list[3]
 
-    return dict(missing_genes), dict(external_id_dict)
+    return dict(missing_genes), dict(external_id_dict), dict(stripyanalysis_time_dict)
 
 
 def read_input_rows(
-    input_path: str, log_data: dict[str, dict[str, str]], external_id_dict: dict[str, str]
+    input_path: str,
+    log_data: dict[str, dict[str, str]],
+    external_id_dict: dict[str, str],
+    stripy_analysis_dict: dict[str, str],
 ) -> list[dict[str, str]]:
     """Reads the input file containing all details to populate into this index, returns as a list of dicts."""
     all_details: list[dict[str, str]] = []
@@ -92,6 +98,8 @@ def read_input_rows(
             subset = line_list[3]
             subset_nice = re.sub(r'[-_]', ' ', line_list[3]).title()
             external_id = external_id_dict[cpg_id]
+            analysis_time = stripy_analysis_dict[cpg_id]
+            analysis_time_nice = re.sub(r'(\d{2})\.(\d{2})\.(\d{4}).*', r'\1/\2/\3', analysis_time)
 
             line_dict = {
                 'cpg_id': cpg_id,
@@ -99,6 +107,7 @@ def read_input_rows(
                 'external_participant_id': line_list[2],
                 'family_id': line_list[1],
                 'subset': subset_nice,
+                'analysis_time': analysis_time_nice,
                 'html_path': line_list[4],
                 'missing_genes': '',
             }
@@ -116,8 +125,8 @@ def read_input_rows(
 def main(input_path, dataset_name: str, output, log: str):
     """Main function to generate the index HTML file."""
 
-    log_content, external_id_dict = digest_logging(log)
-    input_rows = read_input_rows(input_path, log_content, external_id_dict)
+    log_content, external_id_dict, stripy_analysis_dict = digest_logging(log)
+    input_rows = read_input_rows(input_path, log_content, external_id_dict, stripy_analysis_dict)
 
     # Generate the index HTML content
     index_html_content = create_index_html(input_rows, dataset_name)
