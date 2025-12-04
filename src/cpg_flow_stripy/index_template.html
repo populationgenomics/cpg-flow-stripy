@@ -233,21 +233,26 @@
         const directions = Array.from(headers).map(() => '');
 
         const transform = (index, content) => {
-            const type = headers[index].getAttribute('data-type');
-            switch (type) {
-                case 'euro-date':
-                    // Convert DD/MM/YYYY to timestamp
-                    const parts = content.split(/[\/\-\.]/);
-                    if (parts.length === 3) {
-                        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
-                    }
-                    return 0;
-                case 'number':
-                    return parseFloat(content);
-                default:
-                    return content.toLowerCase(); // Case insensitive sort
-            }
-        };
+  const type = headers[index].getAttribute('data-type');
+  switch (type) {
+    case 'euro-date': {
+      const s = content.trim();
+      if (!s) return Number.POSITIVE_INFINITY; // empty dates go last
+      const parts = s.split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        const [dd, mm, yyyy] = parts.map(p => p.padStart(2, '0'));
+        const ts = Date.parse(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+        return Number.isNaN(ts) ? Number.POSITIVE_INFINITY : ts;
+      }
+      return Number.POSITIVE_INFINITY;
+    }
+    case 'number':
+      return parseFloat(content);
+    default:
+      return content.toLowerCase();
+  }
+};
+
 
         const sortColumn = (index) => {
             const direction = directions[index] || 'asc';
