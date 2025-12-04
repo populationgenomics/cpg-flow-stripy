@@ -284,5 +284,5 @@ def make_index_page(
     """)
 
     batch_instance.write_output(j.index, output)
-
+    print(f'Index page job created for dataset {dataset_name} at {output}')
     return j
