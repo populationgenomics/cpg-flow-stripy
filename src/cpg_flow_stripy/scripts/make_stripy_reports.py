@@ -135,13 +135,15 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
     listofdictionarydata = data['GenotypingResults']
     list_of_available_genes = [list(d.keys())[0] for d in listofdictionarydata]
     missing_genes = [gene for gene in loci_list if gene not in list_of_available_genes]
-
+    stripyanalysis_time = data.get('JobDetails', {}).get('TimeOfAnalysis', 'N/A')
     # log the missing genes
     with open(logfile, 'a') as handle:
         if missing_genes:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{", ".join(missing_genes)}\n')
+            handle.write(
+                f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}\n'
+            )
         else:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\tNone\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\n')
 
     print(f'  Available loci in input JSON: {list_of_available_genes}')
     print(f'  Missing loci for this report: {missing_genes}')
