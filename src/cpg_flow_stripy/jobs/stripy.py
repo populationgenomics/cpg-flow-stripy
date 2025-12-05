@@ -284,5 +284,6 @@ def make_index_page(
     """)
 
     batch_instance.write_output(j.index, output)
-
+    corrected_path_index = str(output).replace(file_prefix, html_prefix)
+    print(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
     return j
