@@ -19,22 +19,23 @@ REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
 PEDIGREE_QUERY = gql(
     """
-query Pedigree($project: String!) {
-  project(name: $project) {
-    sequencingGroups {
-      id
-      sample {
-        participant {
-          families {
-            externalId
-          }
-          externalId
+    query Pedigree($project: String!) {
+        project(name: $project) {
+            sequencingGroups {
+                id
+                sample {
+                    participant {
+                        families {
+                            externalId
+                        }
+                        externalId
+                    }
+                }
+                technology
+            }
         }
-      }
     }
-  }
-}
-""",
+    """
 )
 
 
@@ -62,17 +63,22 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
     try:
         sequencing_groups = result['project']['sequencingGroups']
     except (KeyError, TypeError):
-        print('Error: The provided data structure is not as expected.')
+        print(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
         return id_map
 
     for group in sequencing_groups:
+        # Filter for short-read technology only
+        if group.get('technology') != 'short-read':
+            continue
+
         cpg_id = group.get('id')
 
-        # Safely extract the other two IDs
-        # The Family ID is nested in families[0]['externalId']
-        family_id = group['sample']['participant']['families'][0]['externalId']
-        # The Participant External ID is nested in participant['externalId']
-        participant_external_id = group['sample']['participant']['externalId']
+        # Validate all required IDs are present
+        try:
+            family_id = group['sample']['participant']['families'][0]['externalId']
+            participant_external_id = group['sample']['participant']['externalId']
+        except (KeyError, IndexError, TypeError) as err:
+            raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
 
         if cpg_id:
             # Populate the dictionary
