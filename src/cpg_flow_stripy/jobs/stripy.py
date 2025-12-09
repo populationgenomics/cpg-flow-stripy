@@ -21,7 +21,7 @@ PEDIGREE_QUERY = gql(
     """
     query Pedigree($project: String!) {
         project(name: $project) {
-            sequencingGroups {
+            sequencingGroups(technology: {eq: "short-read"}) {
                 id
                 sample {
                     participant {
@@ -67,10 +67,6 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
         return id_map
 
     for group in sequencing_groups:
-        # Filter for short-read technology only
-        if group.get('technology') != 'short-read':
-            continue
-
         cpg_id = group.get('id')
 
         # Validate all required IDs are present
