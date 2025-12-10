@@ -1,5 +1,5 @@
 # CPG Flow Stripy
-#--image  australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.1-2
+#--image  australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.2-1
 A CPG workflow for creating STR reports with STRipy, using the [cpg-flow](https://github.com/populationgenomics/cpg-flow) pipeline framework.
 
 ## Purpose
@@ -13,7 +13,7 @@ The short-read data is processed at the sequencing group level, and STRipy repor
 ```bash
 analysis-runner \
     --skip-repo-checkout \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.1-2\
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.2-1\
     --config src/cpg_flow_stripy/config_template.toml \
     --config stripy_loci.toml \  # containing the inputs_cohorts and sequencing_type
     --dataset seqr \
