@@ -31,6 +31,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
     # Generate table rows
     table_rows = ''
     dataset_title = re.sub(r'[-_]', ' ', dataset_name).title()
+    dataset_title = config.config_retrieve(['stripy', 'stylised_mapping', dataset_name], default=dataset_title)
     for each_dict in input_rows:
         table_rows += f"""
             <tr>
