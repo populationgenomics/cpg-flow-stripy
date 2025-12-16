@@ -11,7 +11,7 @@ check_expected_outputs = true
 status_reporter = 'metamist'
 
 [images]
-stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5_ee4482bc-1"
+stripy = "australia-southeast1-docker.pkg.dev/cpg-common/images/stripy:v2.5_91a4ad-1"
 
 [stripy]
 # Analysis_type can be "standard" (fast) or "extended" (marginally slower but also uses unmapped reads for genotying)

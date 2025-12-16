@@ -1,5 +1,4 @@
 # CPG Flow Stripy
-
 A CPG workflow for creating STR reports with STRipy, using the [cpg-flow](https://github.com/populationgenomics/cpg-flow) pipeline framework.
 
 ## Purpose
