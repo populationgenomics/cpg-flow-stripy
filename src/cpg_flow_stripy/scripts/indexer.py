@@ -6,6 +6,7 @@ from collections import defaultdict
 from importlib import resources
 from pathlib import Path
 
+import loguru
 from cpg_utils import config
 
 
@@ -136,7 +137,7 @@ def main(input_path, dataset_name: str, output, log: str):
     with Path(output).open('w') as f:
         f.write(index_html_content)
 
-    print(f'Index HTML generated successfully at: {output}')
+    loguru.logger.info(f'Index HTML generated successfully at: {output}')
 
 
 if __name__ == '__main__':

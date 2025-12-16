@@ -3,9 +3,9 @@ Create Hail Batch jobs to run STRipy
 """
 
 import json
-import logging
 from typing import TYPE_CHECKING
 
+import loguru
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
 from metamist.graphql import gql, query
@@ -64,7 +64,7 @@ def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[s
     try:
         sequencing_groups = result['project']['sequencingGroups']
     except (KeyError, TypeError):
-        print(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
+        loguru.logger.info(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
         return id_map
 
     for group in sequencing_groups:
@@ -77,7 +77,7 @@ def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[s
         except (KeyError, IndexError, TypeError) as err:
             if cpg_id in relevant_ids:
                 raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
-            logging.warning(
+            loguru.logger.info(
                 f'Skipping irrelevant sequencing group '
                 f'{cpg_id or "unknown"} is not in the relevant cohort but is missing required IDs.',
             )
@@ -126,7 +126,7 @@ def run_stripy_pipeline(
     # accessing the cram via cloudfuse is faster than localising the full cram
     cram_path = sequencing_group.cram
     bucket = cram_path.path.drive
-    print(f'bucket = {bucket}')
+    loguru.logger.info(f'bucket = {bucket}')
     bucket_mount_path = to_path('/bucket')
     j.cloudfuse(bucket, str(bucket_mount_path), read_only=True)
     mounted_cram_path = bucket_mount_path / '/'.join(cram_path.path.parts[2:])
@@ -295,5 +295,5 @@ def make_index_page(
 
     batch_instance.write_output(j.index, output)
     corrected_path_index = str(output).replace(file_prefix, html_prefix)
-    print(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
+    loguru.logger.info(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
     return j
