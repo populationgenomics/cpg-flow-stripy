@@ -75,11 +75,11 @@ def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[s
             family_id = group['sample']['participant']['families'][0]['externalId']
             participant_external_id = group['sample']['participant']['externalId']
         except (KeyError, IndexError, TypeError) as err:
-            if group in relevant_ids:
-                raise ValueError(f'Sequencing group {group or "unknown"} does not have the correct ids') from err
+            if cpg_id in relevant_ids:
+                raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
             logging.warning(
                 f'Skipping irrelevant sequencing group '
-                f'{group or "unknown"} is not in the relevant cohort but is missing required IDs.',
+                f'{cpg_id or "unknown"} is not in the relevant cohort but is missing required IDs.',
             )
             continue
 
