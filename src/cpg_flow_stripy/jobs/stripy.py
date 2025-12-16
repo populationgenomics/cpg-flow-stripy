@@ -3,6 +3,7 @@ Create Hail Batch jobs to run STRipy
 """
 
 import json
+import logging
 from typing import TYPE_CHECKING
 
 from cpg_flow import targets
@@ -39,7 +40,7 @@ PEDIGREE_QUERY = gql(
 )
 
 
-def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
+def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[str]]:
     """
     Creates a dictionary where the key is the CPG ID and the value is a
     list containing the Family ID and the Participant External ID.
@@ -74,7 +75,13 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
             family_id = group['sample']['participant']['families'][0]['externalId']
             participant_external_id = group['sample']['participant']['externalId']
         except (KeyError, IndexError, TypeError) as err:
-            raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
+            if group in relevant_ids:
+                raise ValueError(f'Sequencing group {group or "unknown"} does not have the correct ids') from err
+            logging.warning(
+                f'Skipping irrelevant sequencing group '
+                f'{group or "unknown"} is not in the relevant cohort but is missing required IDs.',
+            )
+            continue
 
         if cpg_id:
             # Populate the dictionary
@@ -250,7 +257,8 @@ def make_index_page(
     j.command(f'cat {" ".join(local_log_files)} > {j.biglog}')
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
-    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name)
+    cpg_glob_ids = list(inputs.keys())
+    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name, cpg_glob_ids)
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
