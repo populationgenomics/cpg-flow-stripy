@@ -6,6 +6,7 @@ from collections import defaultdict
 from importlib import resources
 from pathlib import Path
 
+import loguru
 from cpg_utils import config
 
 
@@ -31,6 +32,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
     # Generate table rows
     table_rows = ''
     dataset_title = re.sub(r'[-_]', ' ', dataset_name).title()
+    dataset_title = config.config_retrieve(['stripy', 'stylised_mapping', dataset_name], default=dataset_title)
     for each_dict in input_rows:
         table_rows += f"""
             <tr>
@@ -135,7 +137,7 @@ def main(input_path, dataset_name: str, output, log: str):
     with Path(output).open('w') as f:
         f.write(index_html_content)
 
-    print(f'Index HTML generated successfully at: {output}')
+    loguru.logger.info(f'Index HTML generated successfully at: {output}')
 
 
 if __name__ == '__main__':

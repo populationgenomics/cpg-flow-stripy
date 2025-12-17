@@ -5,6 +5,7 @@ Create Hail Batch jobs to run STRipy
 import json
 from typing import TYPE_CHECKING
 
+import loguru
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
 from metamist.graphql import gql, query
@@ -39,7 +40,7 @@ PEDIGREE_QUERY = gql(
 )
 
 
-def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
+def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[str]]:
     """
     Creates a dictionary where the key is the CPG ID and the value is a
     list containing the Family ID and the Participant External ID.
@@ -63,7 +64,7 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
     try:
         sequencing_groups = result['project']['sequencingGroups']
     except (KeyError, TypeError):
-        print(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
+        loguru.logger.info(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
         return id_map
 
     for group in sequencing_groups:
@@ -74,7 +75,13 @@ def get_cpg_to_family_mapping(data) -> dict[str, list[str]]:
             family_id = group['sample']['participant']['families'][0]['externalId']
             participant_external_id = group['sample']['participant']['externalId']
         except (KeyError, IndexError, TypeError) as err:
-            raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
+            if cpg_id in relevant_ids:
+                raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
+            loguru.logger.info(
+                f'Skipping irrelevant sequencing group '
+                f'{cpg_id or "unknown"} is not in the relevant cohort but is missing required IDs.',
+            )
+            continue
 
         if cpg_id:
             # Populate the dictionary
@@ -119,7 +126,7 @@ def run_stripy_pipeline(
     # accessing the cram via cloudfuse is faster than localising the full cram
     cram_path = sequencing_group.cram
     bucket = cram_path.path.drive
-    print(f'bucket = {bucket}')
+    loguru.logger.info(f'bucket = {bucket}')
     bucket_mount_path = to_path('/bucket')
     j.cloudfuse(bucket, str(bucket_mount_path), read_only=True)
     mounted_cram_path = bucket_mount_path / '/'.join(cram_path.path.parts[2:])
@@ -250,7 +257,8 @@ def make_index_page(
     j.command(f'cat {" ".join(local_log_files)} > {j.biglog}')
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
-    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name)
+    cpg_glob_ids = list(inputs.keys())
+    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name, cpg_glob_ids)
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
@@ -287,5 +295,5 @@ def make_index_page(
 
     batch_instance.write_output(j.index, output)
     corrected_path_index = str(output).replace(file_prefix, html_prefix)
-    print(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
+    loguru.logger.info(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
     return j

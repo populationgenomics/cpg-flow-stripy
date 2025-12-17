@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 from importlib import resources
 from pathlib import Path
 
+import loguru
+
 DEFAULT_REPORT_SCHEMA = {
     'GenotypingResults': [
         {
@@ -123,14 +125,14 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]
 
-    print(f'Sample ID: {sample_id}')
-    print(f'Report type: {report_type}')
+    loguru.logger.info(f'Sample ID: {sample_id}')
+    loguru.logger.info(f'Report type: {report_type}')
 
     # --- Load Input Data ---
     with open(input_json) as f:
         data = json.load(f)
 
-    print(f"  Relevant loci for '{report_type}': {loci_list}")
+    loguru.logger.info(f"  Relevant loci for '{report_type}': {loci_list}")
 
     listofdictionarydata = data['GenotypingResults']
     list_of_available_genes = [list(d.keys())[0] for d in listofdictionarydata]
@@ -145,8 +147,8 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
         else:
             handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\n')
 
-    print(f'  Available loci in input JSON: {list_of_available_genes}')
-    print(f'  Missing loci for this report: {missing_genes}')
+    loguru.logger.info(f'  Available loci in input JSON: {list_of_available_genes}')
+    loguru.logger.info(f'  Missing loci for this report: {missing_genes}')
 
     dict_of_dicts = {list(d.keys())[0]: d for d in listofdictionarydata}
     subset_dict = {k: v for k, v in dict_of_dicts.items() if k in loci_list}
@@ -187,7 +189,7 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
             # double replace, single write
             output_html_file.write(line.replace('/*SampleResultsJSON*/', json.dumps(temp_data, indent=4)))
 
-    print(f'  HTML file generated: {output}')
+    loguru.logger.info(f'  HTML file generated: {output}')
 
 
 if __name__ == '__main__':
