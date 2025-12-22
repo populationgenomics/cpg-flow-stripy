@@ -140,7 +140,8 @@ class MakeIndexPage(stage.DatasetStage):
         job = stripy.make_index_page(
             dataset_name=dataset.name,
             inputs=dataset_outputs_previous_stage,
-            output=[outputs['index'], outputs['latest']],
+            output_archive=outputs['index'],
+            output_latest=outputs['latest'],
             all_reports=str(dataset.tmp_prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'all_reports.txt'),
             job_attrs=self.get_job_attrs(dataset),
         )
