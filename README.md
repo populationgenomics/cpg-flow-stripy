@@ -38,4 +38,4 @@ analysis-runner \
 3. MakeIndexPage
    1. DatasetStage, collects all reports generated for the SGs in a Dataset, and creates one Index page
    2. The index page contains the SG & Family ID, the report sub-type, the link to the report, and any missing loci relative to the documented Loci subset
-   3. Two identical index pages are created, one called latest, that links to the fixed collaborator-facing path, and one with a version number for archival purposes
+   3. Two identical index pages are created, one called latest, that links to the fixed collaborator-facing path, and one with a loci version number for archival purposes
