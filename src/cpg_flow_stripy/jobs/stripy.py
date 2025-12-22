@@ -240,7 +240,7 @@ def make_stripy_reports(
 def make_index_page(
     dataset_name: str,
     inputs: dict[str, dict[str, Path]],
-    output: Path,
+    output: list[Path],
     all_reports: str,
     job_attrs: dict,
 ) -> 'BashJob':
@@ -282,18 +282,22 @@ def make_index_page(
 
     # localise that file
     mega_input_file = hail_batch.get_batch().read_input(all_reports)
-
+    output_index = output[0]
+    output_latest = output[1]
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
     j.command(f"""
         python3 -m cpg_flow_stripy.scripts.indexer \\
         --input_txt {mega_input_file} \\
         --dataset_name {dataset_name} \\
-        --output {j.index} \\
+        --output {j.index} {j.latest} \\
         --logfile {j.biglog}
     """)
 
-    batch_instance.write_output(j.index, output)
-    corrected_path_index = str(output).replace(file_prefix, html_prefix)
+    batch_instance.write_output(j.index, output_index)
+    batch_instance.write_output(j.latest, output_latest)
+    corrected_path_index = str(output_index).replace(file_prefix, html_prefix)
+    corrected_path_latest = str(output_latest).replace(file_prefix, html_prefix)
     loguru.logger.info(f'Index page job created for dataset {dataset_name} at {corrected_path_index}')
+    loguru.logger.info(f'latest page job created for dataset {dataset_name} at {corrected_path_latest}')
     return j

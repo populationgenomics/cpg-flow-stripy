@@ -129,12 +129,17 @@ def main(input_path, dataset_name: str, output, log: str):
 
     log_content, external_id_dict, stripy_analysis_dict = digest_logging(log)
     input_rows = read_input_rows(input_path, log_content, external_id_dict, stripy_analysis_dict)
-
+    internal_output = output[0]
+    external_output = output[1]  # nargs+ used to satisfy cpg_flow CLI requirements
     # Generate the index HTML content
     index_html_content = create_index_html(input_rows, dataset_name)
 
-    # Write to output file
-    with Path(output).open('w') as f:
+    # Write to archived output file
+    with Path(internal_output).open('w') as f:
+        f.write(index_html_content)
+
+    # External output for collaborator access
+    with Path(external_output).open('w') as f:
         f.write(index_html_content)
 
     loguru.logger.info(f'Index HTML generated successfully at: {output}')
@@ -144,7 +149,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Generate an Index page for all STRipy reports in a Dataset')
     parser.add_argument('--input_txt', help='file containing all inputs to this index', required=True)
     parser.add_argument('--dataset_name', help='dataset name', required=True)
-    parser.add_argument('--output', help='Path to write the index HTML', required=True)
+    parser.add_argument('--output', help='Path to write the index HTML', required=True, nargs='+')
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
     args = parser.parse_args()
     main(input_path=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)
