@@ -12,7 +12,7 @@ The short-read data is processed at the sequencing group level, and STRipy repor
 ```bash
 analysis-runner \
     --skip-repo-checkout \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.3-1 \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.2.4-1 \
     --config src/cpg_flow_stripy/config_template.toml \
     --config stripy_loci.toml \  # containing the inputs_cohorts and sequencing_type
     --dataset seqr \
@@ -38,3 +38,4 @@ analysis-runner \
 3. MakeIndexPage
    1. DatasetStage, collects all reports generated for the SGs in a Dataset, and creates one Index page
    2. The index page contains the SG & Family ID, the report sub-type, the link to the report, and any missing loci relative to the documented Loci subset
+   3. Two identical index pages are created, one called latest, that links to the fixed collaborator-facing path, and one with a loci version number for archival purposes

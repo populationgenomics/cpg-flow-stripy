@@ -6,7 +6,6 @@ from collections import defaultdict
 from importlib import resources
 from pathlib import Path
 
-import loguru
 from cpg_utils import config
 
 
@@ -129,15 +128,12 @@ def main(input_path, dataset_name: str, output, log: str):
 
     log_content, external_id_dict, stripy_analysis_dict = digest_logging(log)
     input_rows = read_input_rows(input_path, log_content, external_id_dict, stripy_analysis_dict)
-
     # Generate the index HTML content
     index_html_content = create_index_html(input_rows, dataset_name)
 
-    # Write to output file
+    # Write to archived output file
     with Path(output).open('w') as f:
         f.write(index_html_content)
-
-    loguru.logger.info(f'Index HTML generated successfully at: {output}')
 
 
 if __name__ == '__main__':
