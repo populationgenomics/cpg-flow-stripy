@@ -82,7 +82,7 @@ def main() -> None:
     new_tag = get_next_version_tag(container_name, current_version)
 
     # Build the final matrix structure.
-    matrix = {'include': {'name': container_name, 'tag': new_tag}}
+    matrix = {'include': [{'name': container_name, 'tag': new_tag}]}
     print(json.dumps(matrix, separators=(',', ':')), file=sys.stderr)
     print(json.dumps(matrix, separators=(',', ':')), end='')
 
