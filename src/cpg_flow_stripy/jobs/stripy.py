@@ -286,7 +286,7 @@ def make_index_page(
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
     j.command(f"""
-        python3 -m cpg_flow_stripy.scripts.indexer \\
+        python3 -m cpg_flow_stripy.scripts.make_stripy_index \\
         --input_txt {mega_input_file} \\
         --dataset_name {dataset_name} \\
         --output {j.output} \\
