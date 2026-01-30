@@ -17,16 +17,13 @@
       .group-name {font-weight: normal;}
       .description {
             text-align: center;
-            margin-bottom: 30px;
-            color: #666;
-            line-height: 1.6;
+            display: block;
+            margin: auto;
         }
         .container {
             max-width: 80vw;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
+            display: block;
+            margin: auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
     </style>
@@ -38,56 +35,55 @@
     </nav>
 
     <div class="container">
-    <div class="description">
-        <p>Explore STRipy reports organised by Sample and Family IDs, Report Type, and Missing Loci.</p>
-        <p>Click "Open" to view individual detailed reports</p>
-        <p> Note: The "Missing loci" column shows loci present in the panel for the given
-            Report Type,
-            but absent from the variant data for a sample. This can happen when a sample was processed before
-            a locus was added to the STRipy catalogue. These samples can be re-genotyped on request,
-            which will capture all current loci.</p>
-    </div>
+        <div class="description">
+            <p>Explore STRipy reports organised by Sample and Family IDs, Report Type, and Missing Loci.</p>
+            <p>Click "Open" to view individual detailed reports</p>
+            <p> Note: The "Missing loci" column shows loci present in the panel for the given Report Type, but absent from
+            the variant data for a sample. This can happen when a sample was processed before a locus was added to the
+            STRipy catalogue. These samples can be re-genotyped on request, which will capture all current loci.
+            </p>
+        </div>
 
-    <div style="text-align: center;">
-        <button id="toggleButton" onclick="toggleTableVisibility()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px; margin-bottom: 10px;">
-            Show Report Loci Reference Table
-        </button>
-    </div>
+        <div style="text-align: center;">
+            <button id="toggleButton" onclick="toggleTableVisibility()" style="background-color: MediumSeaGreen; border: none;">
+                Show Report Loci Reference Table
+            </button>
+        </div>
 
-    <div id="lociTableContainer" style="display: none;">
-    <table class="table tablesorter" id="loci-table">
-        <thead>
-            <tr">
-                <th>Report Type</th>
-                <th>Total Loci</th>
-                <th>Full Loci List</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Default</strong></td>
-                <td>62</td>
-                <td>ABCD3, AFF2, AR, ARX_1, ARX_2, ATN1, ATXN1, ATXN10, ATXN2, ATXN3, ATXN7, ATXN8OS, BEAN1, C9ORF72, CACNA1A, CBL, CNBP, COMP, CSTB, DAB1, DIP2B, DMD, DMPK, EIF4A3, FGF14, FMR1, FOXL2, FXN, GIPC1, GLS, HOXA13_1, HOXA13_2, HOXA13_3, HOXD13, HTT, JPH3, LRP12, MARCHF6, NOP56, NOTCH2NLC, NUTM2B-AS1, PABPN1, PHOX2B, PPP2R2B, PRDM12, PRNP, RAPGEF2, RILPL1, RUNX2, SAMD12, SOX3, STARD7, TBP, TBX1, TCF4, THAP11, TNRC6A, VWA1, XYLT1, YEATS2, ZFHX3, ZIC2, ZIC3</td>
-            </tr>
-            <tr>
-                <td><strong>Default with exclusions</strong></td>
-                <td>59</td>
-               <td>The same list as default, but excludes C9ORF72, HTT, and PRNP</td>
-            </tr>
+        <div id="lociTableContainer" style="display: none;">
+            <table class="table tablesorter" id="loci-table">
+                <thead>
+                    <tr">
+                        <th>Report Type</th>
+                        <th>Total Loci</th>
+                        <th>Full Loci List</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Default</strong></td>
+                        <td>62</td>
+                        <td>ABCD3, AFF2, AR, ARX_1, ARX_2, ATN1, ATXN1, ATXN10, ATXN2, ATXN3, ATXN7, ATXN8OS, BEAN1, C9ORF72, CACNA1A, CBL, CNBP, COMP, CSTB, DAB1, DIP2B, DMD, DMPK, EIF4A3, FGF14, FMR1, FOXL2, FXN, GIPC1, GLS, HOXA13_1, HOXA13_2, HOXA13_3, HOXD13, HTT, JPH3, LRP12, MARCHF6, NOP56, NOTCH2NLC, NUTM2B-AS1, PABPN1, PHOX2B, PPP2R2B, PRDM12, PRNP, RAPGEF2, RILPL1, RUNX2, SAMD12, SOX3, STARD7, TBP, TBX1, TCF4, THAP11, TNRC6A, VWA1, XYLT1, YEATS2, ZFHX3, ZIC2, ZIC3</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Default with exclusions</strong></td>
+                        <td>59</td>
+                       <td>The same list as default, but excludes C9ORF72, HTT, and PRNP</td>
+                    </tr>
 
-            <tr>
-                <td><strong>Paediatric</strong></td>
-                <td>31</td>
-                <td>AFF2, ARX_2, ATXN2, ATXN3, ATXN7, CBL, COMP, CSTB, DIP2B, DMD, DMPK, EIF4A3, FMR1, FOXL2, FXN, GLS, HOXA13_1, HOXA13_2, HOXA13_3, HOXD13, PHOX2B, PPP2R2B, PRDM12, RUNX2, SOX3, TBP, TBX1, VWA1, XYLT1, ZIC2, ZIC3</td>
-            </tr>
-        </tbody>
-    </table>
-    </div>
+                    <tr>
+                        <td><strong>Paediatric</strong></td>
+                        <td>31</td>
+                        <td>AFF2, ARX_2, ATXN2, ATXN3, ATXN7, CBL, COMP, CSTB, DIP2B, DMD, DMPK, EIF4A3, FMR1, FOXL2, FXN, GLS, HOXA13_1, HOXA13_2, HOXA13_3, HOXD13, PHOX2B, PPP2R2B, PRDM12, RUNX2, SOX3, TBP, TBX1, VWA1, XYLT1, ZIC2, ZIC3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     <main class="container mt-4 mb-4">
 
     <div class="tab-pane fade show active" id="results-tab-pane" role="tabpanel" tabindex="0">
-      <h1>Reports</h1>
-        <table class="table tablesorter" id="variant-table">
+        <h1>Reports</h1>
+        <table class="table tablesorter" id="report-table">
             <thead>
                 <tr>
                 <th class="group-false">Sample</th>
@@ -111,39 +107,31 @@
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
-                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #4CAF50; border: none">Open</button></td>
+                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: MediumSeaGreen; border: none">Open</button></td>
                     </tr>
 
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</main>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.widgets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/widgets/widget-grouping.min.js"></script>
 
     <script type="text/javascript">
       $(document).ready(function() {
-        // Tablesorter: hide child rows
-        $('.tablesorter-childRow td').hide();
 
-        // Tablesorter: configure variant table
-        $("#variant-table").tablesorter({
+        // Tablesorter: configure report table
+        $("#report-table").tablesorter({
           theme : "bootstrap",
           sortList : [[0,0]],
-          widgets : [ "filter", "columns", "group" ],
+          widgets : [ "filter", "columns"],
           widgetOptions : {
-            // class names added to columns when sorted
-            columns: [ "", "", "" ],
-            group_collapsible : true,
-            group_collapsed   : false,
-            group_count       : false,
-            group_separator : " "
-            }
+            columns: ["", ""],
+          }
         })
       })
       function toggleTableVisibility() {

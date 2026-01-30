@@ -106,4 +106,4 @@ if __name__ == '__main__':
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
     args = parser.parse_args()
-    main(manifest=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)
+    main(manifest=args.manifest, dataset_name=args.dataset, output=args.output, log=args.logfile)
