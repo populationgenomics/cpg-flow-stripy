@@ -2,8 +2,6 @@ import re
 from argparse import ArgumentParser
 from collections import defaultdict
 from dataclasses import dataclass
-
-# used to navigate from the installed location of this package to the HTML template file
 from importlib import resources
 from pathlib import Path
 
@@ -23,6 +21,12 @@ class Entry:
     family: str
     url: str
 
+    def __key(self) -> tuple[str, str, str]:
+        return self.sample, self.report_type, self.url
+
+    def __hash__(self) -> int:
+        return hash(self.__key())
+
 
 def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> list[Entry]:
     """Digest the per-report STRipy data - dates, subset ID, missing loci, ... pathogenic?"""
@@ -35,7 +39,7 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
                 continue
 
             # break up the logging line, turn it into an index Entry
-            line_list = line.rstrip().split('\t')
+            line_list = line.split('\t')
 
             cpg_id = line_list[0]
             report_type = line_list[1]
@@ -47,7 +51,7 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
                     ext_sample=index_manifest[cpg_id]['ext_participant'],
                     ext_participant=line_list[2],
                     run_date=re.sub(r'(\d{2})\.(\d{2})\.(\d{4}).*', r'\3/\2/\1', line_list[3]),
-                    missing=line_list[4],
+                    missing=line_list[4].rstrip(),
                     family=index_manifest[cpg_id]['family'],
                     url=index_manifest[cpg_id][report_type],
                 ),
@@ -61,7 +65,6 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
     with open(manifest_path) as f:
         for line in f:
             line_list = line.rstrip().split('\t')
-            # f'{cpg_id}\t{fam_id}\t{external_id}\t{report_type}\t{corrected_path}'
             cpg_id = line_list[0]
 
             manifest_details[cpg_id] |= {
@@ -73,12 +76,12 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
     return dict(manifest_details)
 
 
-def main(input_path, dataset_name: str, output, log: str):
+def main(manifest: str, dataset_name: str, output: str, log: str) -> None:
     """Main function to generate the index HTML file."""
 
-    index_manifest = digest_index_manifest(input_path)
+    digested_manifest = digest_index_manifest(manifest)
 
-    index_entries = digest_logging(log, index_manifest)
+    index_entries = digest_logging(log, digested_manifest)
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(
@@ -98,9 +101,9 @@ def main(input_path, dataset_name: str, output, log: str):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Generate an Index page for all STRipy reports in a Dataset')
-    parser.add_argument('--input_txt', help='file containing all inputs to this index', required=True)
-    parser.add_argument('--dataset_name', help='dataset name', required=True)
+    parser.add_argument('--manifest', help='file containing all inputs to this index', required=True)
+    parser.add_argument('--dataset', help='dataset name', required=True)
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
     args = parser.parse_args()
-    main(input_path=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)
+    main(manifest=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)

@@ -12,7 +12,7 @@ from cpg_utils import hail_batch
 from cpg_flow_stripy.stages import MakeIndexPage
 
 
-def cli_main():
+def cli_main() -> None:
     """
     CLI entrypoint - starts up the workflow
     """

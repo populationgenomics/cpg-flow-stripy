@@ -70,7 +70,7 @@ def get_next_version_tag(folder: str, version: str) -> str:
     return f'{version}-{new_suffix}'
 
 
-def main():
+def main() -> None:
     dockerfile_name = 'Dockerfile'
     container_name = 'cpg-flow-stripy'
     current_version = extract_version_from_file(dockerfile_name)
@@ -81,11 +81,8 @@ def main():
     # Determine the next available tag based on current_version.
     new_tag = get_next_version_tag(container_name, current_version)
 
-    include_entries = []
-    include_entries.append({'name': container_name, 'tag': new_tag})
-
     # Build the final matrix structure.
-    matrix = {'include': include_entries}
+    matrix = {'include': {'name': container_name, 'tag': new_tag}}
     print(json.dumps(matrix, separators=(',', ':')), file=sys.stderr)
     print(json.dumps(matrix, separators=(',', ':')), end='')
 
