@@ -6,6 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 import jinja2
+from cpg_utils import config
 
 
 @dataclass
@@ -92,7 +93,10 @@ def main(manifest: str, dataset_name: str, output: str, log: str) -> None:
 
     template = env.get_template('index.html.jinja')
 
-    content = template.render(reports=index_entries, dataset=dataset_name)
+    dataset_title = re.sub(r'[-_]', ' ', dataset_name).title()
+    dataset_title = config.config_retrieve(['stripy', 'stylised_mapping', dataset_name], default=dataset_title)
+
+    content = template.render(reports=index_entries, dataset=dataset_title)
 
     # Write to output file
     with Path(output).open('w') as f:

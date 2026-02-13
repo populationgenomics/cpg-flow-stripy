@@ -47,7 +47,7 @@
         </div>
 
         <div style="text-align: center;">
-            <button id="toggleButton" onclick="toggleTableVisibility()" style="background-color: MediumSeaGreen; border: none;">
+            <button id="toggleButton" onclick="toggleTableVisibility()" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 8px 16px;">
                 Show Report Loci Reference Table
             </button>
         </div>
@@ -81,6 +81,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
     <main class="container mt-4 mb-4">
 
     <div class="tab-pane fade show active" id="results-tab-pane" role="tabpanel" tabindex="0">
@@ -108,7 +109,7 @@
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
-                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: MediumSeaGreen; border: none">Open</button></td>
+                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 4px 12px;">Open</button></td>
                     </tr>
 
                 {% endfor %}
