@@ -52,6 +52,8 @@
             </button>
         </div>
 
+        <br>
+
         <div id="lociTableContainer" style="display: none;">
             <table class="table tablesorter" id="loci-table">
                 <thead>
@@ -140,18 +142,18 @@
         const tableContainer = document.getElementById('lociTableContainer');
         const button = document.getElementById('toggleButton');
 
-        if (tableContainer.style.display === 'none') {
-            // Show the table
-            tableContainer.style.display = 'block';
-            // Change button text to Hide
-            button.textContent = 'Hide Report Loci Reference Table';
-        } else {
-            // Hide the table
-            tableContainer.style.display = 'none';
-            // Change button text to Show
-            button.textContent = 'Show Report Loci Reference Table';
-        }
-    }
+          if (tableContainer.style.display === 'none') {
+              // Show the table
+              tableContainer.style.display = 'block';
+              // Change button text to Hide
+              button.textContent = 'Hide Report Loci Reference Table';
+          } else {
+              // Hide the table
+              tableContainer.style.display = 'none';
+              // Change button text to Show
+              button.textContent = 'Show Report Loci Reference Table';
+          }
+      }
     </script>
   </body>
 </html>
