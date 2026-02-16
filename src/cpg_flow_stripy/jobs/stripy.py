@@ -40,20 +40,21 @@ PEDIGREE_QUERY = gql(
 )
 
 
-def get_cpg_to_family_mapping(data, relevant_ids: list[str]) -> dict[str, list[str]]:
+def get_cpg_to_family_mapping(dataset: str, relevant_ids: list[str]) -> dict[str, list[str]]:
     """
     Creates a dictionary where the key is the CPG ID and the value is a
     list containing the Family ID and the Participant External ID.
 
     Args:
-        data (dict): The dictionary containing the query result structure.
+        dataset (str): The dataset to generate Metamist query results for
+        relevant_ids (list[str]): The list of IDs to filter on
 
     Returns:
         dict: A dictionary mapping CPG IDs to a list of [Family ID, Participant External ID].
     """
 
     # when run in test we need to manually edit the dataset used in this query
-    query_dataset = data
+    query_dataset = dataset
     if config.config_retrieve(['workflow', 'access_level']) == 'test' and 'test' not in query_dataset:
         query_dataset += '-test'
 
@@ -286,9 +287,9 @@ def make_index_page(
     # --- Job Command (SINGLE STEP) ---
     # Runs your script, telling it to write to the local VM path
     j.command(f"""
-        python3 -m cpg_flow_stripy.scripts.indexer \\
-        --input_txt {mega_input_file} \\
-        --dataset_name {dataset_name} \\
+        python3 -m cpg_flow_stripy.scripts.make_stripy_index \\
+        --manifest {mega_input_file} \\
+        --dataset {dataset_name} \\
         --output {j.output} \\
         --logfile {j.biglog}
     """)
