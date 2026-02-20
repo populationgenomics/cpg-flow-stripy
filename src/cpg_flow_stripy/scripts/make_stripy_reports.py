@@ -51,7 +51,7 @@ DEFAULT_REPORT_SCHEMA = {
 }
 
 
-def deep_merge_defaults(target_dict, default_dict):
+def deep_merge_defaults(target_dict: dict, default_dict: dict) -> dict:
     """
     Optimized recursive merge of a target dictionary with a default schema.
 
@@ -122,15 +122,15 @@ def deep_merge_defaults(target_dict, default_dict):
 
 
 def main(
-    input_json,
-    output,
-    external_id,
-    report_type,
-    loci_list,
+    input_json: str,
+    output: str,
+    external_id: str,
+    report_type: str,
+    loci_list: str,
     subset_svg_flag: int,
     log_loci_of_interest: str,
     logfile: str,
-):
+) -> None:
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]

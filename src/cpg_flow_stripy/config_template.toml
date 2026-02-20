@@ -1,5 +1,8 @@
 [workflow]
-input_cohorts = []
+
+input_cohorts = [
+    # validation-test 3 genomes
+    "COH3637"]
 sequencing_type= 'genome'
 # used to make sure we don't repeat previously completed stages
 check_expected_outputs = true

@@ -91,13 +91,6 @@ def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, 
 
             line_list = line.rstrip().split('\t')
             external_id = line_list[2]
-            # e.g. {
-            #          CPGxxx: {
-            #              report_type_1: "gene1,gene2,gene3",
-            #              report_type_2: "None",
-            #          },
-            #      ...
-            #      }
             missing_genes[line_list[0]][line_list[1]] = line_list[4]
             external_id_dict[line_list[0]] = external_id
             stripyanalysis_time_dict[line_list[0]] = line_list[3]
@@ -170,7 +163,7 @@ def read_input_rows(
     return all_details
 
 
-def main(input_path, dataset_name: str, output, log: str, log_loci: str):
+def main(input_path: str, dataset_name: str, output: str, log: str, log_loci: str) -> None:
     """Main function to generate the index HTML file."""
 
     log_content, external_id_dict, stripy_analysis_dict = digest_logging(log)
