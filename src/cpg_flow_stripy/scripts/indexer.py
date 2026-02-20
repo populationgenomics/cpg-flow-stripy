@@ -27,8 +27,9 @@ def create_open_button(gcs_browser_url: str) -> str:
 
 def render_loci_of_interest(loci_dict: dict[str, str]) -> str:
     """
-    Render the loci of interest as colored HTML spans.
+    Render the loci of interest as colored HTML spans wrapped in a blurred container.
     Each locus is displayed with its associated color as the background.
+    The container starts blurred and can be clicked to reveal.
     """
     if not loci_dict:
         return ''
@@ -39,7 +40,9 @@ def render_loci_of_interest(loci_dict: dict[str, str]) -> str:
             f'<span style="background-color: {color}; padding: 2px 6px; border-radius: 3px; '
             f'margin: 2px; display: inline-block;">{locus}</span>'
         )
-    return ' '.join(spans)
+    content = ' '.join(spans)
+    # Wrap in a div with loci-cell class for blur effect
+    return f'<div class="loci-cell">{content}</div>'
 
 
 def create_index_html(input_rows: list[dict], dataset_name: str) -> str:
