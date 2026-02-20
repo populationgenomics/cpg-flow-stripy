@@ -25,7 +25,24 @@ def create_open_button(gcs_browser_url: str) -> str:
     """
 
 
-def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> str:
+def render_loci_of_interest(loci_dict: dict[str, str]) -> str:
+    """
+    Render the loci of interest as colored HTML spans.
+    Each locus is displayed with its associated color as the background.
+    """
+    if not loci_dict:
+        return ''
+
+    spans = []
+    for locus, color in loci_dict.items():
+        spans.append(
+            f'<span style="background-color: {color}; padding: 2px 6px; border-radius: 3px; '
+            f'margin: 2px; display: inline-block;">{locus}</span>'
+        )
+    return ' '.join(spans)
+
+
+def create_index_html(input_rows: list[dict], dataset_name: str) -> str:
     """Build consolidated index HTML referencing all HTML files listed in the txt file."""
 
     # Generate table rows
@@ -42,6 +59,7 @@ def create_index_html(input_rows: list[dict[str, str]], dataset_name: str) -> st
                 <td>{each_dict['subset']}</td>
                 <td>{each_dict['analysis_time']}</td>
                 <td>{each_dict['missing_genes']}</td>
+                <td>{render_loci_of_interest(each_dict['loci_of_interest'])}</td>
                 <td>{create_open_button(each_dict['html_path'])}</td>
             </tr>
         """
@@ -84,14 +102,39 @@ def digest_logging(log_path: str) -> tuple[dict[str, dict[str, str]], dict[str, 
     return dict(missing_genes), dict(external_id_dict), dict(stripyanalysis_time_dict)
 
 
+def digest_interesting_loci(log_path: str) -> dict[str, dict[str, str]]:
+    """
+    Takes a path to a TSV containing the logging details of interesting loci (Loci which were flagged during analysis)
+    Extracts out the interesting loci (if any) which were present for each sample / report subset combination
+
+    Returns a dict mapping sample_id -> {locus: color, ...}
+    """
+    interesting_loci: dict[str, dict[str, str]] = defaultdict(dict)
+    with open(log_path) as f:
+        for line in f:
+            # skip empty lines
+            if not line.rstrip():
+                continue
+
+            line_list = line.rstrip().split('\t')
+            sample_id = line_list[0]
+            for locus_color in line_list[1:]:
+                if ':' in locus_color:
+                    locus, color = locus_color.split(':', 1)
+                    interesting_loci[sample_id][locus] = color
+
+    return dict(interesting_loci)
+
+
 def read_input_rows(
     input_path: str,
     log_data: dict[str, dict[str, str]],
     external_id_dict: dict[str, str],
     stripy_analysis_dict: dict[str, str],
-) -> list[dict[str, str]]:
+    loci_of_interest: dict[str, dict[str, str]],
+) -> list[dict]:
     """Reads the input file containing all details to populate into this index, returns as a list of dicts."""
-    all_details: list[dict[str, str]] = []
+    all_details: list[dict] = []
     with open(input_path) as f:
         for line in f:
             line_list = line.rstrip().split('\t')
@@ -111,6 +154,7 @@ def read_input_rows(
                 'analysis_time': analysis_time_nice,
                 'html_path': line_list[4],
                 'missing_genes': '',
+                'loci_of_interest': loci_of_interest.get(cpg_id, {}),
             }
 
             # if there are missing loci for this subset, update from an empty string
@@ -123,11 +167,15 @@ def read_input_rows(
     return all_details
 
 
-def main(input_path, dataset_name: str, output, log: str):
+def main(input_path, dataset_name: str, output, log: str, log_loci: str):
     """Main function to generate the index HTML file."""
 
     log_content, external_id_dict, stripy_analysis_dict = digest_logging(log)
-    input_rows = read_input_rows(input_path, log_content, external_id_dict, stripy_analysis_dict)
+
+    loci_of_interest = digest_interesting_loci(log_loci)
+
+    input_rows = read_input_rows(input_path, log_content, external_id_dict, stripy_analysis_dict, loci_of_interest)
+
     # Generate the index HTML content
     index_html_content = create_index_html(input_rows, dataset_name)
 
@@ -142,5 +190,12 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', help='dataset name', required=True)
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
+    parser.add_argument('--log_loci', help='log of interesting loci in this result', required=True)
     args = parser.parse_args()
-    main(input_path=args.input_txt, dataset_name=args.dataset_name, output=args.output, log=args.logfile)
+    main(
+        input_path=args.input_txt,
+        dataset_name=args.dataset_name,
+        output=args.output,
+        log=args.logfile,
+        log_loci=args.log_loci,
+    )

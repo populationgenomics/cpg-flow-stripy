@@ -1,5 +1,6 @@
 # ruff: noqa: C901
 # ruff: noqa: PLR0912
+# ruff: noqa: PLR0915
 import copy
 import json
 from argparse import ArgumentParser
@@ -120,7 +121,16 @@ def deep_merge_defaults(target_dict, default_dict):
     return target_dict
 
 
-def main(input_json, output, external_id, report_type, loci_list, subset_svg_flag: int, logfile: str):
+def main(
+    input_json,
+    output,
+    external_id,
+    report_type,
+    loci_list,
+    subset_svg_flag: int,
+    log_loci_of_interest: str,
+    logfile: str,
+):
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
     sample_id = filename.split('.')[0]
@@ -159,16 +169,45 @@ def main(input_json, output, external_id, report_type, loci_list, subset_svg_fla
     temp_data['GenotypingResults'] = subset_list
 
     genotyping_results = temp_data['GenotypingResults']
+    loci_of_interest = {}
     for locus_item in genotyping_results:
         # Each locus_item is a dictionary with one key (the Locus ID)
         # Use .items() to get the (key, value) pair. Since there's only one,
         # the loop will run exactly once per item.
-        for _locus_id, details_dict in locus_item.items():
-            flag_status = details_dict.get('Flag')
+        for locus_id, details_dict in locus_item.items():
+            flag_status = details_dict.get('Flag', 0)
+            allele_status_list = details_dict.get('Alleles', [])
+            allele_flag = ''
+            allele_pop_outlier_counter = 0
+            for allele_dict in allele_status_list:
+                allele_flag += allele_dict.get('Range', '')
+                if allele_dict.get('IsPopulationOutlier'):
+                    allele_pop_outlier_counter += 1
 
             # You can add conditional logic here, e.g., to check for non-zero flags
             if flag_status < subset_svg_flag and 'SVG' in details_dict:
                 del details_dict['SVG']
+
+            if flag_status == 3:
+                loci_of_interest[locus_id] = 'Red'
+                continue
+
+            if flag_status == 2:
+                loci_of_interest[locus_id] = 'Orange'
+                continue
+
+            if flag_status == 1 and ('pathogenic' in allele_flag):
+                loci_of_interest[locus_id] = 'Pink'
+                continue
+
+            if flag_status == 1 and allele_pop_outlier_counter > 0:
+                loci_of_interest[locus_id] = 'Grey'
+
+    with open(log_loci_of_interest, 'a') as handle:
+        line_to_write = f'{sample_id}'
+        for locus, color in loci_of_interest.items():
+            line_to_write += f'\t{locus}:{color}'
+        handle.write(line_to_write + '\n')
 
     temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
@@ -200,6 +239,9 @@ if __name__ == '__main__':
     parser.add_argument('--report_type', help='report type', required=True)
     parser.add_argument('--loci_list', help='string_list_of_loci', required=True, nargs='+')
     parser.add_argument('--log_file', help='path to log missing loci to', required=True)
+    parser.add_argument(
+        '--log_loci_of_interest', help='path to log loci of interest to flag in the report', required=True
+    )
     parser.add_argument('--subset_svg_flag', help='default=1 0 for all loci 1 for flagged', required=True, type=int)
     args = parser.parse_args()
     main(
@@ -209,5 +251,6 @@ if __name__ == '__main__':
         args.report_type,
         args.loci_list,
         args.subset_svg_flag,
+        args.log_loci_of_interest,
         logfile=args.log_file,
     )
