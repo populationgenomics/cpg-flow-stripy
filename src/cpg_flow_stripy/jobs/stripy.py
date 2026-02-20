@@ -204,7 +204,7 @@ def make_stripy_reports(
 
     j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
-    j['loci_of_interest'] = outputs['log_loci']
+    j.loci_of_interest = outputs['log_loci']
     input_json = batch_instance.read_input(json_path)
 
     for loci_list_name, loci in loci_lists.items():
