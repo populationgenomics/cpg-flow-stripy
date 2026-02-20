@@ -27,6 +27,14 @@
             margin: auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .loci-cell {
+            filter: blur(5px);
+            cursor: pointer;
+            transition: filter 0.3s ease;
+        }
+        .loci-cell.revealed {
+            filter: none;
+        }
 
     </style>
   </head>
@@ -97,6 +105,7 @@
                 <th class="group-false">Report Type</th>
                 <th class="group-false sorter-shortDate" data-date-format="yyyy-mm-dd">Date</th>
                 <th class="group-false">Missing Loci</th>
+                <th class="group-false">Loci of Interest</th>
                 <th class="group-false">Link</th>
                 </tr>
             </thead>
@@ -111,6 +120,15 @@
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
+                        <td>
+                            {% if report.loci_of_interest %}
+                            <div class="loci-cell">
+                                {% for locus, color in report.loci_of_interest.items() %}
+                                <span style="background-color: {{color}}; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">{{locus}}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
                         <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 4px 12px;">Open</button></td>
                     </tr>
 
@@ -137,6 +155,11 @@
             columns: ["", ""],
           }
         })
+
+        // Add click handler to reveal blurred loci cells
+        $(".loci-cell").click(function() {
+          $(this).toggleClass("revealed");
+        });
       })
       function toggleTableVisibility() {
         const tableContainer = document.getElementById('lociTableContainer');
