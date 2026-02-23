@@ -21,7 +21,7 @@ class Entry:
     ext_sample: str
     family: str
     url: str
-    loci_of_interest: dict[str, str]
+    loci_of_interest: dict[str, list[str]]
 
     def __key(self) -> tuple[str, str, str]:
         return self.sample, self.report_type, self.url
@@ -50,13 +50,13 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
             cpg_id = line_list[0]
             report_type = line_list[1]
 
-            # Extract loci of interest from column 5
-            loci_of_interest: dict[str, str] = {}
-            if len(line_list) > 5:
-                for locus_color in line_list[5]:
+            # Extract loci of interest from column 5 (color -> list of loci)
+            loci_of_interest: dict[str, list[str]] = defaultdict(list)
+            if len(line_list) > 5 and line_list[5]:
+                for locus_color in line_list[5].split(','):
                     if ':' in locus_color:
                         locus, color = locus_color.split(':', 1)
-                        loci_of_interest[locus] = color
+                        loci_of_interest[color].append(locus)
 
             report_objects.append(
                 Entry(

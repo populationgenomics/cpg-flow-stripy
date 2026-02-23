@@ -123,8 +123,10 @@
                         <td>
                             {% if report.loci_of_interest %}
                             <div class="loci-cell">
-                                {% for locus, color in report.loci_of_interest.items() %}
+                                {% for color, loci in report.loci_of_interest.items() %}
+                                {% for locus in loci %}
                                 <span style="background-color: {{color}}; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">{{locus}}</span>
+                                {% endfor %}
                                 {% endfor %}
                             </div>
                             {% endif %}

@@ -196,16 +196,14 @@ def main(
 
     # log the missing genes
     with open(logfile, 'a') as handle:
-        line_to_write = ''
-        for locus, color in loci_of_interest.items():
-            line_to_write += f'\t{locus}:{color}'
+        line_to_write = ','.join(f'{locus}:{color}' for locus, color in loci_of_interest.items())
         if missing_genes:
             handle.write(
                 f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}'
-                f'{line_to_write}\n'
+                f'\t{line_to_write}\n'
             )
         else:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone{line_to_write}\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\t{line_to_write}\n')
 
     temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
