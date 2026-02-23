@@ -205,7 +205,7 @@ def main(
                 f'{line_to_write}\n'
             )
         else:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone {line_to_write}\n')
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone{line_to_write}\n')
 
     temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
