@@ -93,7 +93,6 @@ class MakeStripyReports(stage.SequencingGroupStage):
                 for ll in get_loci_lists(sequencing_group.dataset.name)
             },
             'log': std_prefix / 'stripy' / loci_version / f'{sequencing_group.id}.log',
-            'log_loci': std_prefix / 'stripy' / loci_version / f'{sequencing_group.id}_loci_of_int.log',
         }
 
     def queue_jobs(self, sequencing_group: targets.SequencingGroup, inputs: stage.StageInput) -> stage.StageOutput:

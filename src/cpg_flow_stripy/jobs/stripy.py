@@ -204,7 +204,6 @@ def make_stripy_reports(
 
     j = hail_batch.get_batch().new_bash_job(name=f'Make STRipy reports for {sequencing_group.id}', attributes=job_attrs)
     j.image(config.config_retrieve(['workflow', 'driver_image']))
-    j.loci_of_interest = outputs['log_loci']
     input_json = batch_instance.read_input(json_path)
 
     for loci_list_name, loci in loci_lists.items():
@@ -221,7 +220,6 @@ def make_stripy_reports(
             --loci_list {loci_str} \\
             --output {resource_group} \\
             --log_file {j.log_path} \\
-            --log_loci_of_interest {j.loci_of_interest} \\
             --subset_svg_flag {config.config_retrieve(['stripy', 'subset_svg_flag_threshold'], 1)}
         """)
 
@@ -235,7 +233,6 @@ def make_stripy_reports(
 
     # after all commands are executed, extract a log file
     batch_instance.write_output(j.log_path, outputs['log'])
-    batch_instance.write_output(j.loci_of_interest, outputs['log_loci'])
     return j
 
 
@@ -255,13 +252,9 @@ def make_index_page(
 
     # separate out all the real file paths from the log file paths - localise the log files
     local_log_files = [hail_batch.get_batch().read_input(output_dict.pop('log')) for output_dict in inputs.values()]
-    local_log_of_int_files = [
-        hail_batch.get_batch().read_input(output_dict.pop('log_loci')) for output_dict in inputs.values()
-    ]
 
     # concatenate all those separate log files into a single log
     j.command(f'cat {" ".join(local_log_files)} > {j.biglog}')
-    j.command(f'cat {" ".join(local_log_of_int_files)} > {j.biglogofint}')
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_glob_ids = list(inputs.keys())
@@ -296,8 +289,7 @@ def make_index_page(
         --manifest {mega_input_file} \\
         --dataset {dataset_name} \\
         --output {j.output} \\
-        --logfile {j.biglog} \\
-        --log_loci {j.biglogofint}
+        --logfile {j.biglog}
     """)
     batch_instance.write_output(j.output, output_archive)
     batch_instance.write_output(j.output, output_latest)

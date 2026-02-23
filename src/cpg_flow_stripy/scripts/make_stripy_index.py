@@ -30,34 +30,12 @@ class Entry:
         return hash(self.__key())
 
 
-def digest_interesting_loci(log_path: str) -> dict[str, dict[str, str]]:
+def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> list[Entry]:
     """
-    Takes a path to a TSV containing the logging details of interesting loci (Loci which were flagged during analysis)
-    Extracts out the interesting loci (if any) which were present for each sample / report subset combination
+    Digest the per-report STRipy data - dates, subset ID, missing loci, and interesting loci.
 
-    Returns a dict mapping sample_id -> {locus: color, ...}
+    Also extracts interesting loci (if any) which were flagged during analysis for each sample.
     """
-    interesting_loci: dict[str, dict[str, str]] = defaultdict(dict)
-    with open(log_path) as f:
-        for line in f:
-            # skip empty lines
-            if not line.rstrip():
-                continue
-
-            line_list = line.rstrip().split('\t')
-            sample_id = line_list[0]
-            for locus_color in line_list[1:]:
-                if ':' in locus_color:
-                    locus, color = locus_color.split(':', 1)
-                    interesting_loci[sample_id][locus] = color
-
-    return dict(interesting_loci)
-
-
-def digest_logging(
-    log_path: str, index_manifest: dict[str, dict[str, str]], loci_of_interest: dict[str, dict[str, str]]
-) -> list[Entry]:
-    """Digest the per-report STRipy data - dates, subset ID, missing loci, ... pathogenic?"""
 
     report_objects: list[Entry] = []
 
@@ -67,10 +45,18 @@ def digest_logging(
                 continue
 
             # break up the logging line, turn it into an index Entry
-            line_list = line.split('\t')
+            line_list = line.rstrip().split('\t')
 
             cpg_id = line_list[0]
             report_type = line_list[1]
+
+            # Extract loci of interest from column 5
+            loci_of_interest: dict[str, str] = {}
+            if len(line_list) > 5:
+                for locus_color in line_list[5]:
+                    if ':' in locus_color:
+                        locus, color = locus_color.split(':', 1)
+                        loci_of_interest[locus] = color
 
             report_objects.append(
                 Entry(
@@ -82,7 +68,7 @@ def digest_logging(
                     missing=line_list[4].rstrip(),
                     family=index_manifest[cpg_id]['family'],
                     url=index_manifest[cpg_id][report_type],
-                    loci_of_interest=loci_of_interest.get(cpg_id, {}),
+                    loci_of_interest=loci_of_interest,
                 ),
             )
     return report_objects
@@ -105,14 +91,12 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
     return dict(manifest_details)
 
 
-def main(manifest: str, dataset_name: str, output: str, log: str, log_loci: str) -> None:
+def main(manifest: str, dataset_name: str, output: str, log: str) -> None:
     """Main function to generate the index HTML file."""
 
     digested_manifest = digest_index_manifest(manifest)
 
-    loci_of_interest = digest_interesting_loci(log_loci)
-
-    index_entries = digest_logging(log, digested_manifest, loci_of_interest)
+    index_entries = digest_logging(log, digested_manifest)
 
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(
@@ -139,8 +123,5 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', help='dataset name', required=True)
     parser.add_argument('--output', help='Path to write the index HTML', required=True)
     parser.add_argument('--logfile', help='log of failed-to-find loci in this result', required=True)
-    parser.add_argument('--log_loci', help='log of interesting loci in this result', required=True)
     args = parser.parse_args()
-    main(
-        manifest=args.manifest, dataset_name=args.dataset, output=args.output, log=args.logfile, log_loci=args.log_loci
-    )
+    main(manifest=args.manifest, dataset_name=args.dataset, output=args.output, log=args.logfile)

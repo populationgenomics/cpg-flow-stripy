@@ -128,7 +128,6 @@ def main(
     report_type: str,
     loci_list: str,
     subset_svg_flag: int,
-    log_loci_of_interest: str,
     logfile: str,
 ) -> None:
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
@@ -148,14 +147,6 @@ def main(
     list_of_available_genes = [list(d.keys())[0] for d in listofdictionarydata]
     missing_genes = [gene for gene in loci_list if gene not in list_of_available_genes]
     stripyanalysis_time = data.get('JobDetails', {}).get('TimeOfAnalysis', 'N/A')
-    # log the missing genes
-    with open(logfile, 'a') as handle:
-        if missing_genes:
-            handle.write(
-                f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}\n'
-            )
-        else:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\n')
 
     loguru.logger.info(f'  Available loci in input JSON: {list_of_available_genes}')
     loguru.logger.info(f'  Missing loci for this report: {missing_genes}')
@@ -203,11 +194,18 @@ def main(
             if flag_status == 1 and allele_pop_outlier_counter > 0:
                 loci_of_interest[locus_id] = 'Grey'
 
-    with open(log_loci_of_interest, 'a') as handle:
-        line_to_write = f'{sample_id}'
+    # log the missing genes
+    with open(logfile, 'a') as handle:
+        line_to_write = ''
         for locus, color in loci_of_interest.items():
             line_to_write += f'\t{locus}:{color}'
-        handle.write(line_to_write + '\n')
+        if missing_genes:
+            handle.write(
+                f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}'
+                f'{line_to_write}\n'
+            )
+        else:
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone {line_to_write}\n')
 
     temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()
@@ -239,9 +237,6 @@ if __name__ == '__main__':
     parser.add_argument('--report_type', help='report type', required=True)
     parser.add_argument('--loci_list', help='string_list_of_loci', required=True, nargs='+')
     parser.add_argument('--log_file', help='path to log missing loci to', required=True)
-    parser.add_argument(
-        '--log_loci_of_interest', help='path to log loci of interest to flag in the report', required=True
-    )
     parser.add_argument('--subset_svg_flag', help='default=1 0 for all loci 1 for flagged', required=True, type=int)
     args = parser.parse_args()
     main(
@@ -251,6 +246,5 @@ if __name__ == '__main__':
         args.report_type,
         args.loci_list,
         args.subset_svg_flag,
-        args.log_loci_of_interest,
         logfile=args.log_file,
     )
