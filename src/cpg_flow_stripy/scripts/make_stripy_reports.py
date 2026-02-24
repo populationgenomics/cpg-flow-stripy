@@ -172,7 +172,7 @@ def main(
             allele_pop_outlier_counter = 0
             for allele_dict in allele_status_list:
                 allele_flag += allele_dict.get('Range', '')
-                if allele_dict.get('IsPopulationOutlier'):
+                if allele_dict.get('IsPopulationOutlier') is True:
                     allele_pop_outlier_counter += 1
 
             # You can add conditional logic here, e.g., to check for non-zero flags
