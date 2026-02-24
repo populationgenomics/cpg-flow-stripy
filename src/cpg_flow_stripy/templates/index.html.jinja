@@ -28,15 +28,29 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .loci-cell {
-            filter: blur(5px) grayscale(100%);
             cursor: pointer;
-            transition: filter 0.3s ease;
-            min-height: 24px;
-            min-width: 30px;
+            transition: all 0.3s ease;
+            height: 30px;
+            width: 120px;
             display: inline-block;
+            background-color: #888;
+            padding: 4px;
+            border-radius: 4px;
+            color: transparent;
+            overflow: hidden;
+        }
+        .loci-cell * {
+            visibility: hidden;
         }
         .loci-cell.revealed {
-            filter: none;
+            background-color: transparent;
+            color: inherit;
+            height: auto;
+            width: auto;
+            overflow: visible;
+        }
+        .loci-cell.revealed * {
+            visibility: visible;
         }
         .loci-controls {
             display: flex;
@@ -65,7 +79,7 @@
             background-color: #c82333;
         }
         .loci-column-hidden {
-            visibility: hidden;
+            display: none;
         }
         .loci-filter-select {
             padding: 8px 12px;
@@ -73,6 +87,58 @@
             border: 1px solid #ced4da;
             font-size: 14px;
             min-width: 200px;
+            height: auto;
+        }
+        .loci-filter-hidden {
+            display: none !important;
+        }
+        .loci-filter-container {
+            position: relative;
+            display: inline-block;
+        }
+        .loci-filter-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            background-color: white;
+            font-size: 14px;
+            min-width: 200px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .loci-filter-btn:after {
+            content: '▼';
+            float: right;
+            margin-left: 10px;
+        }
+        .loci-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            min-width: 200px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .loci-filter-dropdown.show {
+            display: block;
+        }
+        .loci-filter-dropdown label {
+            display: block;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin: 0;
+        }
+        .loci-filter-dropdown label:hover {
+            background-color: #f0f0f0;
+        }
+        .loci-filter-dropdown input[type="checkbox"] {
+            margin-right: 8px;
         }
 
     </style>
@@ -135,16 +201,18 @@
 
     <div class="loci-controls">
         <button id="toggleLociColumn" class="loci-btn loci-btn-hide" onclick="toggleLociColumn()">
-            Hide Loci Column
+            Show Loci Column
         </button>
-        <button class="loci-btn loci-btn-warning" onclick="unblurAllLoci()">
+        <button id="toggleBlurBtn" class="loci-btn loci-btn-warning" onclick="toggleBlurAllLoci()">
             Unblur All Loci
         </button>
-        <select id="locusFilter" class="loci-filter-select" onchange="filterByLocus()">
-            <option value="all">Show All Samples</option>
-            <option value="any-loci">Show Only Samples With Loci of Interest</option>
-            <option disabled>──────────</option>
-        </select>
+        <div id="locusFilterContainer" class="loci-filter-container loci-filter-hidden">
+            <button type="button" class="loci-filter-btn" onclick="toggleFilterDropdown()">
+                Hide Loci...
+            </button>
+            <div id="locusFilterDropdown" class="loci-filter-dropdown">
+            </div>
+        </div>
     </div>
 
     <div class="tab-pane fade show active" id="results-tab-pane" role="tabpanel" tabindex="0">
@@ -158,7 +226,7 @@
                 <th class="group-false">Report Type</th>
                 <th class="group-false sorter-shortDate" data-date-format="yyyy-mm-dd">Date</th>
                 <th class="group-false">Missing Loci</th>
-                <th class="group-false loci-column">Loci of Interest</th>
+                <th class="group-false loci-column loci-column-hidden">Loci of Interest</th>
                 <th class="group-false">Link</th>
                 </tr>
             </thead>
@@ -213,14 +281,49 @@
           }
         })
 
+        // Hide the filter cell for loci column (index 7) on load since column starts hidden
+        setTimeout(function() {
+          const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
+          if (filterRow && filterRow.cells[7]) {
+            filterRow.cells[7].style.display = 'none';
+          }
+        }, 100);
+
         // Add click handler to reveal blurred loci cells
         $(".loci-cell").click(function() {
           $(this).toggleClass("revealed");
+          updateBlurButtonState();
         });
 
         // Populate the locus filter dropdown with unique loci and their counts
         populateLocusFilter();
       })
+
+      function updateBlurButtonState() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const button = document.getElementById('toggleBlurBtn');
+        const anyRevealed = Array.from(cells).some(cell => cell.classList.contains('revealed'));
+        button.textContent = anyRevealed ? 'Re-blur All Loci' : 'Unblur All Loci';
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
+      }
+
+      function updateFilterVisibility() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const columns = document.querySelectorAll('.loci-column');
+        const filterContainer = document.getElementById('locusFilterContainer');
+
+        const allRevealed = Array.from(cells).every(cell => cell.classList.contains('revealed'));
+        const columnVisible = !columns[0].classList.contains('loci-column-hidden');
+
+        // Show filter only when column is visible AND all cells are revealed
+        if (allRevealed && columnVisible) {
+          filterContainer.classList.remove('loci-filter-hidden');
+        } else {
+          filterContainer.classList.add('loci-filter-hidden');
+        }
+      }
 
       function populateLocusFilter() {
         const locusCounts = {};
@@ -236,38 +339,43 @@
         // Sort loci alphabetically
         const sortedLoci = Object.keys(locusCounts).sort();
 
-        // Add options to the dropdown
-        const select = document.getElementById('locusFilter');
+        // Add checkboxes to the dropdown
+        const dropdown = document.getElementById('locusFilterDropdown');
         sortedLoci.forEach(locus => {
-          const option = document.createElement('option');
-          option.value = locus;
-          option.textContent = `${locus} (${locusCounts[locus]})`;
-          select.appendChild(option);
+          const label = document.createElement('label');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = locus;
+          checkbox.onchange = filterByLocus;
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(`${locus} (${locusCounts[locus]})`));
+          dropdown.appendChild(label);
         });
       }
 
-      function filterByLocus() {
-        const selectedLocus = document.getElementById('locusFilter').value;
-        const rows = document.querySelectorAll('#report-table tbody tr');
+      function toggleFilterDropdown() {
+        const dropdown = document.getElementById('locusFilterDropdown');
+        dropdown.classList.toggle('show');
+      }
 
-        rows.forEach(row => {
-          if (selectedLocus === 'all') {
-            // Show all rows
-            row.style.display = '';
-          } else if (selectedLocus === 'any-loci') {
-            // Show only rows that have at least one locus tag
-            const hasLoci = row.querySelectorAll('.locus-tag').length > 0;
-            row.style.display = hasLoci ? '' : 'none';
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(event) {
+        const container = document.getElementById('locusFilterContainer');
+        if (container && !container.contains(event.target)) {
+          document.getElementById('locusFilterDropdown').classList.remove('show');
+        }
+      });
+
+      function filterByLocus() {
+        const checkboxes = document.querySelectorAll('#locusFilterDropdown input[type="checkbox"]:checked');
+        const selectedLoci = Array.from(checkboxes).map(cb => cb.value);
+        const locusTags = document.querySelectorAll('.locus-tag');
+
+        locusTags.forEach(tag => {
+          if (selectedLoci.includes(tag.dataset.locus)) {
+            tag.style.display = 'none';
           } else {
-            // Show only rows containing the selected locus
-            const locusTags = row.querySelectorAll('.locus-tag');
-            let hasSelectedLocus = false;
-            locusTags.forEach(tag => {
-              if (tag.dataset.locus === selectedLocus) {
-                hasSelectedLocus = true;
-              }
-            });
-            row.style.display = hasSelectedLocus ? '' : 'none';
+            tag.style.display = 'inline-block';
           }
         });
       }
@@ -291,6 +399,7 @@
 
       function toggleLociColumn() {
         const columns = document.querySelectorAll('.loci-column');
+        const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
         const button = document.getElementById('toggleLociColumn');
         const isHidden = columns[0].classList.contains('loci-column-hidden');
 
@@ -302,16 +411,44 @@
           }
         });
 
+        // Also hide/show the filter input for the loci column (index 7)
+        if (filterRow) {
+          const filterCell = filterRow.cells[7];
+          if (filterCell) {
+            filterCell.style.display = isHidden ? '' : 'none';
+          }
+        }
+
         button.textContent = isHidden ? 'Hide Loci Column' : 'Show Loci Column';
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
       }
 
-      function unblurAllLoci() {
-        const confirmed = confirm('Warning: This will reveal all Loci of Interest data for all samples. Are you sure you want to continue?');
-        if (confirmed) {
-          document.querySelectorAll('.loci-cell').forEach(cell => {
-            cell.classList.add('revealed');
+      function toggleBlurAllLoci() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const button = document.getElementById('toggleBlurBtn');
+        const anyRevealed = Array.from(cells).some(cell => cell.classList.contains('revealed'));
+
+        if (anyRevealed) {
+          // Re-blur all cells
+          cells.forEach(cell => {
+            cell.classList.remove('revealed');
           });
+          button.textContent = 'Unblur All Loci';
+        } else {
+          // Unblur all cells with warning
+          const confirmed = confirm('Warning: This will reveal all Loci of Interest data for all samples. Are you sure you want to continue?');
+          if (confirmed) {
+            cells.forEach(cell => {
+              cell.classList.add('revealed');
+            });
+            button.textContent = 'Re-blur All Loci';
+          }
         }
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
       }
     </script>
   </body>
