@@ -31,9 +31,48 @@
             filter: blur(5px) grayscale(100%);
             cursor: pointer;
             transition: filter 0.3s ease;
+            min-height: 24px;
+            min-width: 30px;
+            display: inline-block;
         }
         .loci-cell.revealed {
             filter: none;
+        }
+        .loci-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .loci-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        .loci-btn-hide {
+            background-color: #6c757d;
+            color: white;
+        }
+        .loci-btn-hide:hover {
+            background-color: #5a6268;
+        }
+        .loci-btn-warning {
+            background-color: #dc3545;
+            color: white;
+        }
+        .loci-btn-warning:hover {
+            background-color: #c82333;
+        }
+        .loci-column-hidden {
+            visibility: hidden;
+        }
+        .loci-filter-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            font-size: 14px;
+            min-width: 200px;
         }
 
     </style>
@@ -94,6 +133,20 @@
     </div>
     <main class="container mt-4 mb-4">
 
+    <div class="loci-controls">
+        <button id="toggleLociColumn" class="loci-btn loci-btn-hide" onclick="toggleLociColumn()">
+            Hide Loci Column
+        </button>
+        <button class="loci-btn loci-btn-warning" onclick="unblurAllLoci()">
+            Unblur All Loci
+        </button>
+        <select id="locusFilter" class="loci-filter-select" onchange="filterByLocus()">
+            <option value="all">Show All Samples</option>
+            <option value="any-loci">Show Only Samples With Loci of Interest</option>
+            <option disabled>──────────</option>
+        </select>
+    </div>
+
     <div class="tab-pane fade show active" id="results-tab-pane" role="tabpanel" tabindex="0">
         <table class="table tablesorter" id="report-table">
             <thead>
@@ -105,7 +158,7 @@
                 <th class="group-false">Report Type</th>
                 <th class="group-false sorter-shortDate" data-date-format="yyyy-mm-dd">Date</th>
                 <th class="group-false">Missing Loci</th>
-                <th class="group-false">Loci of Interest</th>
+                <th class="group-false loci-column">Loci of Interest</th>
                 <th class="group-false">Link</th>
                 </tr>
             </thead>
@@ -120,16 +173,18 @@
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
-                        <td>
-                            {% if report.loci_of_interest %}
+                        <td class="loci-column">
                             <div class="loci-cell">
+                                {% if report.loci_of_interest %}
                                 {% for color, loci in report.loci_of_interest.items() %}
                                 {% for locus in loci %}
-                                <span style="background-color: {{color}}; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">{{locus}}</span>
+                                <span class="locus-tag" data-locus="{{locus}}" style="background-color: {{color}}; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">{{locus}}</span>
                                 {% endfor %}
                                 {% endfor %}
+                                {% else %}
+                                <span style="color: #ccc;">—</span>
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </td>
                         <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 4px 12px;">Open</button></td>
                     </tr>
@@ -162,7 +217,61 @@
         $(".loci-cell").click(function() {
           $(this).toggleClass("revealed");
         });
+
+        // Populate the locus filter dropdown with unique loci and their counts
+        populateLocusFilter();
       })
+
+      function populateLocusFilter() {
+        const locusCounts = {};
+
+        // Count occurrences of each locus
+        document.querySelectorAll('.locus-tag').forEach(tag => {
+          const locus = tag.dataset.locus;
+          if (locus) {
+            locusCounts[locus] = (locusCounts[locus] || 0) + 1;
+          }
+        });
+
+        // Sort loci alphabetically
+        const sortedLoci = Object.keys(locusCounts).sort();
+
+        // Add options to the dropdown
+        const select = document.getElementById('locusFilter');
+        sortedLoci.forEach(locus => {
+          const option = document.createElement('option');
+          option.value = locus;
+          option.textContent = `${locus} (${locusCounts[locus]})`;
+          select.appendChild(option);
+        });
+      }
+
+      function filterByLocus() {
+        const selectedLocus = document.getElementById('locusFilter').value;
+        const rows = document.querySelectorAll('#report-table tbody tr');
+
+        rows.forEach(row => {
+          if (selectedLocus === 'all') {
+            // Show all rows
+            row.style.display = '';
+          } else if (selectedLocus === 'any-loci') {
+            // Show only rows that have at least one locus tag
+            const hasLoci = row.querySelectorAll('.locus-tag').length > 0;
+            row.style.display = hasLoci ? '' : 'none';
+          } else {
+            // Show only rows containing the selected locus
+            const locusTags = row.querySelectorAll('.locus-tag');
+            let hasSelectedLocus = false;
+            locusTags.forEach(tag => {
+              if (tag.dataset.locus === selectedLocus) {
+                hasSelectedLocus = true;
+              }
+            });
+            row.style.display = hasSelectedLocus ? '' : 'none';
+          }
+        });
+      }
+
       function toggleTableVisibility() {
         const tableContainer = document.getElementById('lociTableContainer');
         const button = document.getElementById('toggleButton');
@@ -178,6 +287,31 @@
               // Change button text to Show
               button.textContent = 'Show Report Loci Reference Table';
           }
+      }
+
+      function toggleLociColumn() {
+        const columns = document.querySelectorAll('.loci-column');
+        const button = document.getElementById('toggleLociColumn');
+        const isHidden = columns[0].classList.contains('loci-column-hidden');
+
+        columns.forEach(col => {
+          if (isHidden) {
+            col.classList.remove('loci-column-hidden');
+          } else {
+            col.classList.add('loci-column-hidden');
+          }
+        });
+
+        button.textContent = isHidden ? 'Hide Loci Column' : 'Show Loci Column';
+      }
+
+      function unblurAllLoci() {
+        const confirmed = confirm('Warning: This will reveal all Loci of Interest data for all samples. Are you sure you want to continue?');
+        if (confirmed) {
+          document.querySelectorAll('.loci-cell').forEach(cell => {
+            cell.classList.add('revealed');
+          });
+        }
       }
     </script>
   </body>
