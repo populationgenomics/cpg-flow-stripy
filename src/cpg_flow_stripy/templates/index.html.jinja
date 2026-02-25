@@ -52,93 +52,11 @@
         .loci-cell.revealed * {
             visibility: visible;
         }
-        .loci-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .loci-btn {
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-        }
-        .loci-btn-hide {
-            background-color: #6c757d;
-            color: white;
-        }
-        .loci-btn-hide:hover {
-            background-color: #5a6268;
-        }
-        .loci-btn-warning {
-            background-color: #dc3545;
-            color: white;
-        }
-        .loci-btn-warning:hover {
-            background-color: #c82333;
-        }
         .loci-column-hidden {
             display: none;
         }
-        .loci-filter-select {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            font-size: 14px;
-            min-width: 200px;
-            height: auto;
-        }
-        .loci-filter-hidden {
+        .d-none {
             display: none !important;
-        }
-        .loci-filter-container {
-            position: relative;
-            display: inline-block;
-        }
-        .loci-filter-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            background-color: white;
-            font-size: 14px;
-            min-width: 200px;
-            cursor: pointer;
-            text-align: left;
-        }
-        .loci-filter-btn:after {
-            content: '▼';
-            float: right;
-            margin-left: 10px;
-        }
-        .loci-filter-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: white;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            min-width: 200px;
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .loci-filter-dropdown.show {
-            display: block;
-        }
-        .loci-filter-dropdown label {
-            display: block;
-            padding: 8px 12px;
-            cursor: pointer;
-            margin: 0;
-        }
-        .loci-filter-dropdown label:hover {
-            background-color: #f0f0f0;
-        }
-        .loci-filter-dropdown input[type="checkbox"] {
-            margin-right: 8px;
         }
 
     </style>
@@ -160,7 +78,7 @@
         </div>
 
         <div style="text-align: center;">
-            <button id="toggleButton" onclick="toggleTableVisibility()" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 8px 16px;">
+            <button id="toggleButton" class="btn btn-success" onclick="toggleTableVisibility()">
                 Show Report Loci Reference Table
             </button>
         </div>
@@ -199,19 +117,19 @@
     </div>
     <main class="container mt-4 mb-4">
 
-    <div class="loci-controls">
-        <button id="toggleLociColumn" class="loci-btn loci-btn-hide" onclick="toggleLociColumn()">
+    <div class="d-flex justify-content-center gap-2 mb-3">
+        <button id="toggleLociColumn" class="btn btn-secondary" onclick="toggleLociColumn()">
             Show Loci of Interest
         </button>
-        <button id="toggleBlurBtn" class="loci-btn loci-btn-warning" onclick="toggleBlurAllLoci()">
+        <button id="toggleBlurBtn" class="btn btn-danger" onclick="toggleBlurAllLoci()">
             Unblur All Loci
         </button>
-        <div id="locusFilterContainer" class="loci-filter-container loci-filter-hidden">
-            <button type="button" class="loci-filter-btn" onclick="toggleFilterDropdown()">
+        <div id="locusFilterContainer" class="dropdown d-none">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Hide Loci...
             </button>
-            <div id="locusFilterDropdown" class="loci-filter-dropdown">
-            </div>
+            <ul id="locusFilterDropdown" class="dropdown-menu" style="max-height: 250px; overflow-y: auto;">
+            </ul>
         </div>
     </div>
 
@@ -254,7 +172,7 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 4px 12px;">Open</button></td>
+                        <td><button class="btn btn-success btn-sm" onclick="window.open('{{report.url}}', '_blank')">Open</button></td>
                     </tr>
 
                 {% endfor %}
@@ -319,9 +237,9 @@
 
         // Show filter only when column is visible AND all cells are revealed
         if (allRevealed && columnVisible) {
-          filterContainer.classList.remove('loci-filter-hidden');
+          filterContainer.classList.remove('d-none');
         } else {
-          filterContainer.classList.add('loci-filter-hidden');
+          filterContainer.classList.add('d-none');
         }
       }
 
@@ -339,32 +257,24 @@
         // Sort loci alphabetically
         const sortedLoci = Object.keys(locusCounts).sort();
 
-        // Add checkboxes to the dropdown
+        // Add checkboxes to the dropdown using Bootstrap list items
         const dropdown = document.getElementById('locusFilterDropdown');
         sortedLoci.forEach(locus => {
+          const li = document.createElement('li');
           const label = document.createElement('label');
+          label.className = 'dropdown-item';
+          label.style.cursor = 'pointer';
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
+          checkbox.className = 'form-check-input me-2';
           checkbox.value = locus;
           checkbox.onchange = filterByLocus;
           label.appendChild(checkbox);
           label.appendChild(document.createTextNode(`${locus} (${locusCounts[locus]})`));
-          dropdown.appendChild(label);
+          li.appendChild(label);
+          dropdown.appendChild(li);
         });
       }
-
-      function toggleFilterDropdown() {
-        const dropdown = document.getElementById('locusFilterDropdown');
-        dropdown.classList.toggle('show');
-      }
-
-      // Close dropdown when clicking outside
-      document.addEventListener('click', function(event) {
-        const container = document.getElementById('locusFilterContainer');
-        if (container && !container.contains(event.target)) {
-          document.getElementById('locusFilterDropdown').classList.remove('show');
-        }
-      });
 
       function filterByLocus() {
         const checkboxes = document.querySelectorAll('#locusFilterDropdown input[type="checkbox"]:checked');
