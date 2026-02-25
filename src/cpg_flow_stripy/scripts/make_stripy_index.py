@@ -41,11 +41,11 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
 
     with open(log_path) as f:
         for line in f:
-            if not line.rstrip():
+            if not line.strip():
                 continue
 
             # break up the logging line, turn it into an index Entry
-            line_list = line.rstrip().split('\t')
+            line_list = line.rstrip('\n').split('\t')
 
             cpg_id = line_list[0]
             report_type = line_list[1]
@@ -79,7 +79,7 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
     manifest_details: dict[str, dict[str, str]] = defaultdict(dict)
     with open(manifest_path) as f:
         for line in f:
-            line_list = line.rstrip().split('\t')
+            line_list = line.rstrip('\n').split('\t')
             cpg_id = line_list[0]
 
             manifest_details[cpg_id] |= {
