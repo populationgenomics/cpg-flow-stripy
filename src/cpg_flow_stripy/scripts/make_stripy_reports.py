@@ -184,7 +184,7 @@ def main(
     # --- Generate HTML Output ---
     # This script writes the final HTML to the --output path
     with (
-        resources.open_text('cpg_flow_stripy', 'results_template.html') as results_html_template,
+        (resources.files('cpg_flow_stripy') / 'results_template.html').open() as results_html_template,
         open(output, 'w') as output_html_file,
     ):
         for line in results_html_template:
