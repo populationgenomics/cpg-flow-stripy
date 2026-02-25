@@ -41,9 +41,12 @@ def test_digest_logging(tmp_path):
     logging_file = tmp_path / 'log.txt'
 
     with open(logging_file, 'w') as writehandle:
-        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\n')
-        writehandle.write('CPG2\tdefault\tEXTSAM2\t22.11.9999\tLOTS,OF,MISSING\n')
-        writehandle.write('CPG2\tspecific\tEXTSAM2\t22.11.9999\tNOTHING\n')
+        # Case 1: No missing loci, no loci of interest
+        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\t\n')
+        # Case 2: Missing loci, with loci of interest
+        writehandle.write('CPG2\tdefault\tEXTSAM2\t22.11.9999\tLOTS,OF,MISSING\tATXN1:#ff0000,HTT:#ff0000\n')
+        # Case 3: Missing loci, no loci of interest (empty column)
+        writehandle.write('CPG2\tspecific\tEXTSAM2\t22.11.9999\tNOTHING\t\n')
 
     manifest = {
         'CPG1': {
@@ -70,6 +73,7 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT1',
             family='FAM1',
             url='blahblahblah.html',
+            loci_of_interest={},
         ),
         Entry(
             sample='CPG2',
@@ -80,6 +84,7 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT2',
             family='FAM2',
             url='foofoofoo.html',
+            loci_of_interest={'#ff0000': ['ATXN1', 'HTT']},
         ),
         Entry(
             sample='CPG2',
@@ -90,6 +95,7 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT2',
             family='FAM2',
             url='oooooooohhh.html',
+            loci_of_interest={},
         ),
     ]:
         assert expected in entries
