@@ -20,9 +20,9 @@ REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
 COMBINED_QUERY = gql(
     """
-    query CombinedPedigree($project: String!, $sgIds: [String!]) {
+    query Pedigree($project: String!, $sgIds: [String!]!) {
         project(name: $project) {
-            sequencingGroups(id: {in_: $sgIds}) {
+            sequencingGroups(id: {in_: $sgIds}, technology: {eq: "short-read"}) {
                 id
                 technology
                 sample {
@@ -61,17 +61,15 @@ def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> tuple[dict[str, l
     cpg_to_family = {}
     cpg_to_affected = {}
 
-    try:
-        sequencing_groups = result['project']['sequencingGroups']
-    except (KeyError, TypeError):
-        return {}, {}
+    # Safeguard against empty results
+    sequencing_groups = result.get('project', {}).get('sequencingGroups', [])
 
     for group in sequencing_groups:
         cpg_id = group.get('id')
         try:
             participant = group['sample']['participant']
-            family_id = participant['families'][0]['external_id']
-            ext_id = participant['externalId']
+            ext_id = group['sample']['participant']['externalId']
+            family_id = group['sample']['participant']['families'][0]['externalId']
 
             # affected is usually an integer (0, 1, 2) or boolean
             # We take the status from the first family relationship found
