@@ -174,6 +174,7 @@
                         <td>{{report.family}}</td>
                         <td>{{report.ext_participant}}</td>
                         <td>{{report.ext_sample}}</td>
+                        <td>{{report.affected_status}}</td>
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
@@ -191,7 +192,7 @@
                             </div>
                         </td>
                         <td><button class="btn btn-success btn-sm" onclick="window.open('{{report.url}}', '_blank')">Open</button></td>
-                        <td>{{ report.affected_status }}</td>
+
                     </tr>
 
                 {% endfor %}
