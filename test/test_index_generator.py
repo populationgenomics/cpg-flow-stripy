@@ -20,7 +20,7 @@ def test_digest_manifest(tmp_path):
     with open(manifest_file, 'w') as writehandle:
         writehandle.write(manifest_data)
 
-    results = digest_index_manifest(manifest_file)
+    results = digest_index_manifest(str(manifest_file))
     assert results == {
         'CPG1': {
             'default': 'blahblahblah.html',
@@ -62,7 +62,7 @@ def test_digest_logging(tmp_path):
         },
     }
 
-    entries = digest_logging(log_path=logging_file, index_manifest=manifest)
+    entries = digest_logging(log_path=str(logging_file), index_manifest=manifest)
     for expected in [
         Entry(
             sample='CPG1',
@@ -99,3 +99,19 @@ def test_digest_logging(tmp_path):
         ),
     ]:
         assert expected in entries
+
+
+def test_digest_logging_coloured_loci(tmp_path):
+    """Check parsing of multiple coloured loci from the log TSV."""
+    logging_file = tmp_path / 'log_coloured.txt'
+    with open(logging_file, 'w') as writehandle:
+        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\tATXN1:#ff0000,HTT:#00ff00,DRPLA:#ff0000\n')
+    manifest = {
+        'CPG1': {
+            'default': 'blahblahblah.html',
+            'ext_participant': 'EXT1',
+            'family': 'FAM1',
+        },
+    }
+    entries = digest_logging(log_path=str(logging_file), index_manifest=manifest)
+    assert entries[0].loci_of_interest == {'#ff0000': ['ATXN1', 'DRPLA'], '#00ff00': ['HTT']}

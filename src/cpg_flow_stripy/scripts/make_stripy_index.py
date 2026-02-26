@@ -22,6 +22,7 @@ class Entry:
     family: str
     url: str
     loci_of_interest: dict[str, list[str]]
+    affected_status: str
 
     def __key(self) -> tuple[str, str, str]:
         return self.sample, self.report_type, self.url
@@ -69,6 +70,7 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
                     family=index_manifest[cpg_id]['family'],
                     url=index_manifest[cpg_id][report_type],
                     loci_of_interest=loci_of_interest,
+                    affected_status=index_manifest[cpg_id]['affected_status'],
                 ),
             )
     return report_objects
@@ -86,6 +88,7 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
                 'family': line_list[1],
                 line_list[3]: line_list[4],
                 'ext_participant': line_list[2],
+                'affected_status': line_list[5],
             }
 
     return dict(manifest_details)

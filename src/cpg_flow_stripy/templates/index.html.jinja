@@ -16,6 +16,7 @@
     <style type="text/css">
       a {text-decoration: none;}
       .group-name {font-weight: normal;}
+      td, th {text-align: left; vertical-align: top;}
       .description {
             text-align: center;
             display: block;
@@ -59,6 +60,16 @@
             display: none !important;
         }
 
+      /* Center only the Link column in the report-table */
+      #report-table th:nth-child(9), #report-table td:nth-child(9) {
+        text-align: center;
+      }
+
+      /* Hide the blur/unblur button when loci column is hidden */
+      .blur-btn-hidden {
+        display: none !important;
+      }
+
     </style>
   </head>
 
@@ -71,6 +82,11 @@
         <div class="description">
             <p>Explore STRipy reports organised by Sample and Family IDs, Report Type, and Missing Loci.</p>
             <p>Click "Open" to view individual detailed reports</p>
+            <p>
+              <strong>Loci of Interest</strong> is a hidden column that can be shown using the button below. It displays flagged loci for each sample, with color indicating significance:
+              <br><span style="color:#ff6b6b;">Red</span> – Pathogenic, <span style="color:#ffd93d;">Orange</span> – Intermediate, <span style="color:#e599f7;">Pink</span> – One Hit AR, <span style="color:#ccc;">Grey</span> – Unknown/Outlier.
+              <br>Cells are blurred by default for privacy; click a cell to reveal it. Use the Unblur All button (with warning) to reveal all. A filter dropdown lets you hide specific loci, and appears only when the column is visible and all cells are unblurred.
+            </p>
             <p> Note: The "Missing loci" column shows loci present in the panel for the given Report Type, but absent from
             the variant data for a sample. This can happen when a sample was processed before a locus was added to the
             STRipy catalogue. These samples can be re-genotyped on request, which will capture all current loci.
@@ -141,11 +157,13 @@
                 <th class="group-false">Family</th>
                 <th class="group-false">Ext.ID</th>
                 <th class="group-false">Ext.Sample</th>
+                <th class="group-false">Affected Status</th>
                 <th class="group-false">Report Type</th>
                 <th class="group-false sorter-shortDate" data-date-format="yyyy-mm-dd">Date</th>
                 <th class="group-false">Missing Loci</th>
                 <th class="group-false loci-column loci-column-hidden">Loci of Interest</th>
                 <th class="group-false">Link</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -173,6 +191,7 @@
                             </div>
                         </td>
                         <td><button class="btn btn-success btn-sm" onclick="window.open('{{report.url}}', '_blank')">Open</button></td>
+                        <td>{{ report.affected_status }}</td>
                     </tr>
 
                 {% endfor %}
@@ -215,6 +234,13 @@
 
         // Populate the locus filter dropdown with unique loci and their counts
         populateLocusFilter();
+
+        // Hide the blur/unblur button if loci column is hidden on load
+        const lociColumns = document.querySelectorAll('.loci-column');
+        const blurBtn = document.getElementById('toggleBlurBtn');
+        if (lociColumns.length && lociColumns[0].classList.contains('loci-column-hidden') && blurBtn) {
+          blurBtn.classList.add('blur-btn-hidden');
+        }
       })
 
       function updateBlurButtonState() {
@@ -311,6 +337,7 @@
         const columns = document.querySelectorAll('.loci-column');
         const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
         const button = document.getElementById('toggleLociColumn');
+        const blurBtn = document.getElementById('toggleBlurBtn');
         const isHidden = columns[0].classList.contains('loci-column-hidden');
 
         columns.forEach(col => {
@@ -330,6 +357,15 @@
         }
 
         button.textContent = isHidden ? 'Hide Loci of Interest' : 'Show Loci of Interest';
+
+        // Hide/show the blur/unblur button
+        if (blurBtn) {
+          if (isHidden) {
+            blurBtn.classList.remove('blur-btn-hidden');
+          } else {
+            blurBtn.classList.add('blur-btn-hidden');
+          }
+        }
 
         // Update filter dropdown visibility
         updateFilterVisibility();

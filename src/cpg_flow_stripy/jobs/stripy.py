@@ -18,21 +18,24 @@ if TYPE_CHECKING:
 # not used, needs correction
 REPORT_TEMPLATE_PATH = './cpg_flow_stripy/stripy_report_template.html'
 
-PEDIGREE_QUERY = gql(
+COMBINED_QUERY = gql(
     """
-    query Pedigree($project: String!) {
+    query CombinedPedigree($project: String!, $sgIds: [String!]) {
         project(name: $project) {
-            sequencingGroups(technology: {eq: "short-read"}) {
+            sequencingGroups(id: {in_: $sgIds}) {
                 id
+                technology
                 sample {
                     participant {
+                        externalId
                         families {
                             externalId
                         }
-                        externalId
+                        familyParticipants {
+                            affected
+                        }
                     }
                 }
-                technology
             }
         }
     }
@@ -40,55 +43,50 @@ PEDIGREE_QUERY = gql(
 )
 
 
-def get_cpg_to_family_mapping(dataset: str, relevant_ids: list[str]) -> dict[str, list[str]]:
+def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> tuple[dict[str, list[str]], dict[str, str]]:
     """
-    Creates a dictionary where the key is the CPG ID and the value is a
-    list containing the Family ID and the Participant External ID.
-
-    Args:
-        dataset (str): The dataset to generate Metamist query results for
-        relevant_ids (list[str]): The list of IDs to filter on
-
-    Returns:
-        dict: A dictionary mapping CPG IDs to a list of [Family ID, Participant External ID].
+    Returns two dictionaries:
+    1. cpg_to_family: {cpgID: [FamilyID, ParticipantExternalID]}
+    2. cpg_to_affected: {cpgID: affected_status}
     """
 
-    # when run in test we need to manually edit the dataset used in this query
+    # Handle test environment naming conventions
     query_dataset = dataset
     if config.config_retrieve(['workflow', 'access_level']) == 'test' and 'test' not in query_dataset:
         query_dataset += '-test'
 
-    result = query(PEDIGREE_QUERY, variables={'project': query_dataset})
-    id_map: dict[str, list[str]] = {}
+    variables = {'project': query_dataset, 'sgIds': relevant_ids}
+    result = query(COMBINED_QUERY, variables=variables)
 
-    # Safely navigate to the list of sequencing groups
+    cpg_to_family = {}
+    cpg_to_affected = {}
+
     try:
         sequencing_groups = result['project']['sequencingGroups']
     except (KeyError, TypeError):
-        loguru.logger.info(f'Error: Could not retrieve sequencing groups for project {query_dataset}')
-        return id_map
+        return {}, {}
 
     for group in sequencing_groups:
         cpg_id = group.get('id')
-
-        # Validate all required IDs are present
         try:
-            family_id = group['sample']['participant']['families'][0]['externalId']
-            participant_external_id = group['sample']['participant']['externalId']
-        except (KeyError, IndexError, TypeError) as err:
+            participant = group['sample']['participant']
+            family_id = participant['families'][0]['external_id']
+            ext_id = participant['externalId']
+
+            # affected is usually an integer (0, 1, 2) or boolean
+            # We take the status from the first family relationship found
+            affected = participant['familyParticipants'][0]['affected']
+
+            cpg_to_family[cpg_id] = [family_id, ext_id]
+            cpg_to_affected[cpg_id] = affected
+
+        except (KeyError, IndexError, TypeError):
+            # If the ID is one we specifically asked for, we should know if data is missing
             if cpg_id in relevant_ids:
-                raise ValueError(f'Sequencing group {cpg_id or "unknown"} does not have the correct ids') from err
-            loguru.logger.info(
-                f'Skipping irrelevant sequencing group '
-                f'{cpg_id or "unknown"} is not in the relevant cohort but is missing required IDs.',
-            )
+                print(f'Warning: Missing metadata for requested ID {cpg_id}')
             continue
 
-        if cpg_id:
-            # Populate the dictionary
-            id_map[cpg_id] = [family_id, participant_external_id]
-
-    return id_map
+    return cpg_to_family, cpg_to_affected
 
 
 def run_stripy_pipeline(
@@ -258,7 +256,7 @@ def make_index_page(
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_glob_ids = list(inputs.keys())
-    cpg_fam_mapping = get_cpg_to_family_mapping(dataset_name, cpg_glob_ids)
+    cpg_fam_mapping, affected_map = get_cpg_metadata(dataset_name, cpg_glob_ids)
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
@@ -266,15 +264,28 @@ def make_index_page(
     # an object to store all the content we need to write
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
-        # must find a family ID for this CPG ID
         id_list: list[str] = cpg_fam_mapping[cpg_id]
         fam_id = id_list[0]
         external_id = id_list[1]
+        # possible values for affected:0(unknown), 1(unaffected), 2(affected) -9(unknown)
+        affected = affected_map.get(cpg_id, 'Unknown')
+        match affected:
+            case 1:
+                affected_status = 'Unaffected'
+            case 2:
+                affected_status = 'Affected'
+            case 0 | -9 | 'Unknown':
+                affected_status = 'Unknown'
+            case _:
+                affected_status = 'Unknown'
+                loguru.logger.warning(f'Unexpected status {affected} for ID {cpg_id}.')
 
         for report_type, report_path in output_dict.items():
             # substitute the report HTML path for a proxy-rendered path
             corrected_path = str(report_path).replace(file_prefix, html_prefix)
-            collected_lines.append(f'{cpg_id}\t{fam_id}\t{external_id}\t{report_type}\t{corrected_path}')
+            collected_lines.append(
+                f'{cpg_id}\t{fam_id}\t{external_id}\t{report_type}\t{corrected_path}\t{affected_status}'
+            )
 
     # write all reports to a single temp file, instead of passing an arbitrary number of CLI/script arguments
     with to_path(all_reports).open('w') as f:
