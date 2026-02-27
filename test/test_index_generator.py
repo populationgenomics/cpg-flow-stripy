@@ -11,9 +11,9 @@ def test_digest_manifest(tmp_path):
     manifest_file = tmp_path / 'manifest.txt'
     manifest_data = '\n'.join(
         [
-            'CPG1\tFAM1\tEXT1\tdefault\tblahblahblah.html',
-            'CPG2\tFAM2\tEXT2\tdefault\tfoofoofoo.html',
-            'CPG2\tFAM2\tEXT2\tspecific\toooooooohhh.html',
+            'CPG1\tFAM1\tEXT1\tdefault\tblahblahblah.html\tUnaffected',
+            'CPG2\tFAM2\tEXT2\tdefault\tfoofoofoo.html\tAffected',
+            'CPG2\tFAM2\tEXT2\tspecific\toooooooohhh.html\tAffected',
         ],
     )
 
@@ -26,12 +26,14 @@ def test_digest_manifest(tmp_path):
             'default': 'blahblahblah.html',
             'ext_participant': 'EXT1',
             'family': 'FAM1',
+            'affected_status': 'Unaffected',
         },
         'CPG2': {
             'default': 'foofoofoo.html',
             'ext_participant': 'EXT2',
             'family': 'FAM2',
             'specific': 'oooooooohhh.html',
+            'affected_status': 'Affected',
         },
     }
 
@@ -53,12 +55,14 @@ def test_digest_logging(tmp_path):
             'default': 'blahblahblah.html',
             'ext_participant': 'EXT1',
             'family': 'FAM1',
+            'affected_status': 'Unaffected',
         },
         'CPG2': {
             'default': 'foofoofoo.html',
             'ext_participant': 'EXT2',
             'family': 'FAM2',
             'specific': 'oooooooohhh.html',
+            'affected_status': 'Affected',
         },
     }
 
@@ -74,6 +78,7 @@ def test_digest_logging(tmp_path):
             family='FAM1',
             url='blahblahblah.html',
             loci_of_interest={},
+            affected_status='Unaffected',
         ),
         Entry(
             sample='CPG2',
@@ -85,6 +90,7 @@ def test_digest_logging(tmp_path):
             family='FAM2',
             url='foofoofoo.html',
             loci_of_interest={'#ff0000': ['ATXN1', 'HTT']},
+            affected_status='Affected',
         ),
         Entry(
             sample='CPG2',
@@ -96,6 +102,7 @@ def test_digest_logging(tmp_path):
             family='FAM2',
             url='oooooooohhh.html',
             loci_of_interest={},
+            affected_status='Affected',
         ),
     ]:
         assert expected in entries
@@ -111,6 +118,7 @@ def test_digest_logging_coloured_loci(tmp_path):
             'default': 'blahblahblah.html',
             'ext_participant': 'EXT1',
             'family': 'FAM1',
+            'affected_status': 'Unaffected',
         },
     }
     entries = digest_logging(log_path=str(logging_file), index_manifest=manifest)
