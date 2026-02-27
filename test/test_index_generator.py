@@ -11,27 +11,29 @@ def test_digest_manifest(tmp_path):
     manifest_file = tmp_path / 'manifest.txt'
     manifest_data = '\n'.join(
         [
-            'CPG1\tFAM1\tEXT1\tdefault\tblahblahblah.html',
-            'CPG2\tFAM2\tEXT2\tdefault\tfoofoofoo.html',
-            'CPG2\tFAM2\tEXT2\tspecific\toooooooohhh.html',
+            'CPG1\tFAM1\tEXT1\tdefault\tblahblahblah.html\tUnaffected',
+            'CPG2\tFAM2\tEXT2\tdefault\tfoofoofoo.html\tAffected',
+            'CPG2\tFAM2\tEXT2\tspecific\toooooooohhh.html\tAffected',
         ],
     )
 
     with open(manifest_file, 'w') as writehandle:
         writehandle.write(manifest_data)
 
-    results = digest_index_manifest(manifest_file)
+    results = digest_index_manifest(str(manifest_file))
     assert results == {
         'CPG1': {
             'default': 'blahblahblah.html',
             'ext_participant': 'EXT1',
             'family': 'FAM1',
+            'affected_status': 'Unaffected',
         },
         'CPG2': {
             'default': 'foofoofoo.html',
             'ext_participant': 'EXT2',
             'family': 'FAM2',
             'specific': 'oooooooohhh.html',
+            'affected_status': 'Affected',
         },
     }
 
@@ -41,25 +43,30 @@ def test_digest_logging(tmp_path):
     logging_file = tmp_path / 'log.txt'
 
     with open(logging_file, 'w') as writehandle:
-        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\n')
-        writehandle.write('CPG2\tdefault\tEXTSAM2\t22.11.9999\tLOTS,OF,MISSING\n')
-        writehandle.write('CPG2\tspecific\tEXTSAM2\t22.11.9999\tNOTHING\n')
+        # Case 1: No missing loci, no loci of interest
+        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\t\n')
+        # Case 2: Missing loci, with loci of interest
+        writehandle.write('CPG2\tdefault\tEXTSAM2\t22.11.9999\tLOTS,OF,MISSING\tATXN1:#ff0000,HTT:#ff0000\n')
+        # Case 3: Missing loci, no loci of interest (empty column)
+        writehandle.write('CPG2\tspecific\tEXTSAM2\t22.11.9999\tNOTHING\t\n')
 
     manifest = {
         'CPG1': {
             'default': 'blahblahblah.html',
             'ext_participant': 'EXT1',
             'family': 'FAM1',
+            'affected_status': 'Unaffected',
         },
         'CPG2': {
             'default': 'foofoofoo.html',
             'ext_participant': 'EXT2',
             'family': 'FAM2',
             'specific': 'oooooooohhh.html',
+            'affected_status': 'Affected',
         },
     }
 
-    entries = digest_logging(log_path=logging_file, index_manifest=manifest)
+    entries = digest_logging(log_path=str(logging_file), index_manifest=manifest)
     for expected in [
         Entry(
             sample='CPG1',
@@ -70,6 +77,8 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT1',
             family='FAM1',
             url='blahblahblah.html',
+            loci_of_interest={},
+            affected_status='Unaffected',
         ),
         Entry(
             sample='CPG2',
@@ -80,6 +89,8 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT2',
             family='FAM2',
             url='foofoofoo.html',
+            loci_of_interest={'#ff0000': ['ATXN1', 'HTT']},
+            affected_status='Affected',
         ),
         Entry(
             sample='CPG2',
@@ -90,6 +101,25 @@ def test_digest_logging(tmp_path):
             ext_sample='EXT2',
             family='FAM2',
             url='oooooooohhh.html',
+            loci_of_interest={},
+            affected_status='Affected',
         ),
     ]:
         assert expected in entries
+
+
+def test_digest_logging_coloured_loci(tmp_path):
+    """Check parsing of multiple coloured loci from the log TSV."""
+    logging_file = tmp_path / 'log_coloured.txt'
+    with open(logging_file, 'w') as writehandle:
+        writehandle.write('CPG1\tdefault\tEXTSAM1\t01.02.2015\t\tATXN1:#ff0000,HTT:#00ff00,DRPLA:#ff0000\n')
+    manifest = {
+        'CPG1': {
+            'default': 'blahblahblah.html',
+            'ext_participant': 'EXT1',
+            'family': 'FAM1',
+            'affected_status': 'Unaffected',
+        },
+    }
+    entries = digest_logging(log_path=str(logging_file), index_manifest=manifest)
+    assert entries[0].loci_of_interest == {'#ff0000': ['ATXN1', 'DRPLA'], '#00ff00': ['HTT']}

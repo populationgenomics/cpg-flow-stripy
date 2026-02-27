@@ -16,6 +16,7 @@
     <style type="text/css">
       a {text-decoration: none;}
       .group-name {font-weight: normal;}
+      td, th {text-align: left; vertical-align: top;}
       .description {
             text-align: center;
             display: block;
@@ -27,6 +28,47 @@
             margin: auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .loci-cell {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 30px;
+            width: 120px;
+            display: inline-block;
+            background-color: #888;
+            padding: 4px;
+            border-radius: 4px;
+            color: transparent;
+            overflow: hidden;
+        }
+        .loci-cell * {
+            visibility: hidden;
+        }
+        .loci-cell.revealed {
+            background-color: transparent;
+            color: inherit;
+            height: auto;
+            width: auto;
+            overflow: visible;
+        }
+        .loci-cell.revealed * {
+            visibility: visible;
+        }
+        .loci-column-hidden {
+            display: none;
+        }
+        .d-none {
+            display: none !important;
+        }
+
+      /* Center only the Link column in the report-table */
+      #report-table th:nth-child(9), #report-table td:nth-child(9) {
+        text-align: center;
+      }
+
+      /* Hide the blur/unblur button when loci column is hidden */
+      .blur-btn-hidden {
+        display: none !important;
+      }
 
     </style>
   </head>
@@ -37,17 +79,107 @@
     </nav>
 
     <div class="container">
-        <div class="description">
-            <p>Explore STRipy reports organised by Sample and Family IDs, Report Type, and Missing Loci.</p>
-            <p>Click "Open" to view individual detailed reports</p>
-            <p> Note: The "Missing loci" column shows loci present in the panel for the given Report Type, but absent from
-            the variant data for a sample. This can happen when a sample was processed before a locus was added to the
-            STRipy catalogue. These samples can be re-genotyped on request, which will capture all current loci.
-            </p>
+        <div class="mt-4 mb-5">
+            <div class="alert alert-info shadow-sm d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                <div class="mb-0">
+                    Click <button class="btn btn-success btn-sm mx-1">Open</button> to view full STRipy reports for an
+                    individual.
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-primary text-white d-flex align-items-center">
+                            <i class="bi bi-eye-fill me-2"></i>
+                            <h5 class="card-title mb-0">Loci of Interest</h5>
+                        </div>
+                        <div class="card-body bg-light">
+                            <p class="card-text text-muted mb-3">
+                                Hidden by default. Displays flagged loci for each sample. Colour indicates significance:
+                            </p>
+
+                            <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
+                                <span class="badge rounded-pill"
+                                    style="background-color: Red; color: white;">Pathogenic</span>
+                                <span class="badge rounded-pill"
+                                    style="background-color: Orange; color: white;">Intermediate</span>
+                                <span class="badge rounded-pill" style="background-color: Pink; color: black;">One Hit
+                                    AR</span>
+                                <span class="badge rounded-pill"
+                                    style="background-color: Grey; color: white;">Unknown</span>
+                            </div>
+
+                            <ul class="list-group list-group-flush mb-4 shadow-sm rounded">
+                                <li
+                                    class="list-group-item bg-white d-flex flex-column gap-2 text-center align-items-center">
+                                    <button class="btn btn-secondary">Show Loci of Interest</button>
+                                    <small class="text-muted">Reveals the column. Values are initially hidden. Click an
+                                        individual cell to reveal flagged loci.</small>
+                                </li>
+                                <li
+                                    class="list-group-item bg-white d-flex flex-column gap-2 text-center align-items-center">
+                                    <button class="btn btn-danger">Unblur All Loci</button>
+                                    <small class="text-muted">Reveals all values and displays a filter box allowing you
+                                        to hide specific loci (e.g. frequent or noisy results).</small>
+                                </li>
+                            </ul>
+
+                            <div class="alert alert-warning mb-0 p-2 d-flex align-items-start border-warning border-start border-4 small"
+                                role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                                <div>
+                                    <strong>Filtering Note:</strong> When revealed, the column can be filtered like any
+                                    other. Using this filter will limit the displayed rows <em>even if values are not
+                                        revealed</em>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-secondary text-white d-flex align-items-center">
+                            <i class="bi bi-clipboard-x me-2"></i>
+                            <h5 class="card-title mb-0">Missing Loci</h5>
+                        </div>
+                        <div class="card-body bg-light d-flex flex-column">
+                            <p class="card-text text-muted mb-4">
+                                Shows loci present in the panel for the given Report Type, but absent from STRipy data
+                                for a sample.
+                            </p>
+
+                            <div class="alert bg-white border mb-4 p-3 rounded shadow-sm d-flex align-items-start"
+                                role="alert">
+                                <i class="bi bi-lightbulb-fill text-warning fs-4 me-3 mt-1"></i>
+                                <div class="small">
+                                    <strong>Why does this happen?</strong><br>
+                                    This can happen when a sample was processed before a locus was added to the STRipy
+                                    catalogue.
+                                </div>
+                            </div>
+
+                            <div
+                                class="d-flex align-items-center p-3 border border-info rounded bg-white shadow-sm mt-auto">
+                                <div class="bg-info bg-opacity-10 p-2 rounded-circle me-3 d-flex align-items-center justify-content-center"
+                                    style="width: 48px; height: 48px;">
+                                    <i class="bi bi-arrow-repeat text-info fs-4"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0 small text-muted">These samples can be <strong>re-genotyped on
+                                            request</strong> to capture all current loci.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div style="text-align: center;">
-            <button id="toggleButton" onclick="toggleTableVisibility()" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 8px 16px;">
+            <button id="toggleButton" class="btn btn-success" onclick="toggleTableVisibility()">
                 Show Report Loci Reference Table
             </button>
         </div>
@@ -86,6 +218,22 @@
     </div>
     <main class="container mt-4 mb-4">
 
+    <div class="d-flex justify-content-center gap-2 mb-3">
+        <button id="toggleLociColumn" class="btn btn-secondary" onclick="toggleLociColumn()">
+            Show Loci of Interest
+        </button>
+        <button id="toggleBlurBtn" class="btn btn-danger" onclick="toggleBlurAllLoci()">
+            Unblur All Loci
+        </button>
+        <div id="locusFilterContainer" class="dropdown d-none">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Hide Loci...
+            </button>
+            <ul id="locusFilterDropdown" class="dropdown-menu" style="max-height: 250px; overflow-y: auto;">
+            </ul>
+        </div>
+    </div>
+
     <div class="tab-pane fade show active" id="results-tab-pane" role="tabpanel" tabindex="0">
         <table class="table tablesorter" id="report-table">
             <thead>
@@ -94,10 +242,13 @@
                 <th class="group-false">Family</th>
                 <th class="group-false">Ext.ID</th>
                 <th class="group-false">Ext.Sample</th>
+                <th class="group-false">Affected Status</th>
                 <th class="group-false">Report Type</th>
                 <th class="group-false sorter-shortDate" data-date-format="yyyy-mm-dd">Date</th>
                 <th class="group-false">Missing Loci</th>
+                <th class="group-false loci-column loci-column-hidden">Loci of Interest</th>
                 <th class="group-false">Link</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -108,10 +259,25 @@
                         <td>{{report.family}}</td>
                         <td>{{report.ext_participant}}</td>
                         <td>{{report.ext_sample}}</td>
+                        <td>{{report.affected_status}}</td>
                         <td>{{report.report_type}}</td>
                         <td>{{report.run_date}}</td>
                         <td>{{report.missing}}</td>
-                        <td><button onclick="window.open('{{report.url}}', '_blank')" style="background-color: #90EE90; border: none; border-radius: 8px; padding: 4px 12px;">Open</button></td>
+                        <td class="loci-column loci-column-hidden">
+                            <div class="loci-cell">
+                                {% if report.loci_of_interest %}
+                                {% for color, loci in report.loci_of_interest.items() %}
+                                {% for locus in loci %}
+                                <span class="locus-tag" data-locus="{{locus}}" style="background-color: {{color}}; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">{{locus}}</span>
+                                {% endfor %}
+                                {% endfor %}
+                                {% else %}
+                                <span style="color: #ccc;">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td><button class="btn btn-success btn-sm" onclick="window.open('{{report.url}}', '_blank')">Open</button></td>
+
                     </tr>
 
                 {% endfor %}
@@ -137,7 +303,105 @@
             columns: ["", ""],
           }
         })
+
+        // Hide the filter cell for loci column (index 7) on load since column starts hidden
+        setTimeout(function() {
+          const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
+          if (filterRow && filterRow.cells[7]) {
+            filterRow.cells[7].style.display = 'none';
+          }
+        }, 100);
+
+        // Add click handler to reveal blurred loci cells
+        $(".loci-cell").click(function() {
+          $(this).toggleClass("revealed");
+          updateBlurButtonState();
+        });
+
+        // Populate the locus filter dropdown with unique loci and their counts
+        populateLocusFilter();
+
+        // Hide the blur/unblur button if loci column is hidden on load
+        const lociColumns = document.querySelectorAll('.loci-column');
+        const blurBtn = document.getElementById('toggleBlurBtn');
+        if (lociColumns.length && lociColumns[0].classList.contains('loci-column-hidden') && blurBtn) {
+          blurBtn.classList.add('blur-btn-hidden');
+        }
       })
+
+      function updateBlurButtonState() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const button = document.getElementById('toggleBlurBtn');
+        const anyRevealed = Array.from(cells).some(cell => cell.classList.contains('revealed'));
+        button.textContent = anyRevealed ? 'Re-blur All Loci' : 'Unblur All Loci';
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
+      }
+
+      function updateFilterVisibility() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const columns = document.querySelectorAll('.loci-column');
+        const filterContainer = document.getElementById('locusFilterContainer');
+
+        const allRevealed = Array.from(cells).every(cell => cell.classList.contains('revealed'));
+        const columnVisible = !columns[0].classList.contains('loci-column-hidden');
+
+        // Show filter only when column is visible AND all cells are revealed
+        if (allRevealed && columnVisible) {
+          filterContainer.classList.remove('d-none');
+        } else {
+          filterContainer.classList.add('d-none');
+        }
+      }
+
+      function populateLocusFilter() {
+        const locusCounts = {};
+
+        // Count occurrences of each locus
+        document.querySelectorAll('.locus-tag').forEach(tag => {
+          const locus = tag.dataset.locus;
+          if (locus) {
+            locusCounts[locus] = (locusCounts[locus] || 0) + 1;
+          }
+        });
+
+        // Sort loci alphabetically
+        const sortedLoci = Object.keys(locusCounts).sort();
+
+        // Add checkboxes to the dropdown using Bootstrap list items
+        const dropdown = document.getElementById('locusFilterDropdown');
+        sortedLoci.forEach(locus => {
+          const li = document.createElement('li');
+          const label = document.createElement('label');
+          label.className = 'dropdown-item';
+          label.style.cursor = 'pointer';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'form-check-input me-2';
+          checkbox.value = locus;
+          checkbox.onchange = filterByLocus;
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(`${locus} (${locusCounts[locus]})`));
+          li.appendChild(label);
+          dropdown.appendChild(li);
+        });
+      }
+
+      function filterByLocus() {
+        const checkboxes = document.querySelectorAll('#locusFilterDropdown input[type="checkbox"]:checked');
+        const selectedLoci = Array.from(checkboxes).map(cb => cb.value);
+        const locusTags = document.querySelectorAll('.locus-tag');
+
+        locusTags.forEach(tag => {
+          if (selectedLoci.includes(tag.dataset.locus)) {
+            tag.style.display = 'none';
+          } else {
+            tag.style.display = 'inline-block';
+          }
+        });
+      }
+
       function toggleTableVisibility() {
         const tableContainer = document.getElementById('lociTableContainer');
         const button = document.getElementById('toggleButton');
@@ -153,6 +417,70 @@
               // Change button text to Show
               button.textContent = 'Show Report Loci Reference Table';
           }
+      }
+
+      function toggleLociColumn() {
+        const columns = document.querySelectorAll('.loci-column');
+        const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
+        const button = document.getElementById('toggleLociColumn');
+        const blurBtn = document.getElementById('toggleBlurBtn');
+        const isHidden = columns[0].classList.contains('loci-column-hidden');
+
+        columns.forEach(col => {
+          if (isHidden) {
+            col.classList.remove('loci-column-hidden');
+          } else {
+            col.classList.add('loci-column-hidden');
+          }
+        });
+
+        // Also hide/show the filter input for the loci column (index 7)
+        if (filterRow) {
+          const filterCell = filterRow.cells[7];
+          if (filterCell) {
+            filterCell.style.display = isHidden ? '' : 'none';
+          }
+        }
+
+        button.textContent = isHidden ? 'Hide Loci of Interest' : 'Show Loci of Interest';
+
+        // Hide/show the blur/unblur button
+        if (blurBtn) {
+          if (isHidden) {
+            blurBtn.classList.remove('blur-btn-hidden');
+          } else {
+            blurBtn.classList.add('blur-btn-hidden');
+          }
+        }
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
+      }
+
+      function toggleBlurAllLoci() {
+        const cells = document.querySelectorAll('.loci-cell');
+        const button = document.getElementById('toggleBlurBtn');
+        const anyRevealed = Array.from(cells).some(cell => cell.classList.contains('revealed'));
+
+        if (anyRevealed) {
+          // Re-blur all cells
+          cells.forEach(cell => {
+            cell.classList.remove('revealed');
+          });
+          button.textContent = 'Unblur All Loci';
+        } else {
+          // Unblur all cells with warning
+          const confirmed = confirm('Warning: This will reveal all Loci of Interest data for all samples. Are you sure you want to continue?');
+          if (confirmed) {
+            cells.forEach(cell => {
+              cell.classList.add('revealed');
+            });
+            button.textContent = 'Re-blur All Loci';
+          }
+        }
+
+        // Update filter dropdown visibility
+        updateFilterVisibility();
       }
     </script>
   </body>

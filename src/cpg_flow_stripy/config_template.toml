@@ -1,5 +1,6 @@
 [workflow]
 input_cohorts = []
+
 sequencing_type= 'genome'
 # used to make sure we don't repeat previously completed stages
 check_expected_outputs = true

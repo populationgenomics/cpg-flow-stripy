@@ -1,5 +1,6 @@
 # ruff: noqa: C901
 # ruff: noqa: PLR0912
+# ruff: noqa: PLR0915
 import copy
 import json
 from argparse import ArgumentParser
@@ -121,7 +122,13 @@ def deep_merge_defaults(target_dict: dict, default_dict: dict) -> dict:
 
 
 def main(
-    input_json: str, output: str, external_id: str, report_type: str, loci_list: str, subset_svg_flag: int, logfile: str
+    input_json: str,
+    output: str,
+    external_id: str,
+    report_type: str,
+    loci_list: str,
+    subset_svg_flag: int,
+    logfile: str,
 ) -> None:
     # Extract sampleID from filename (e.g., "CPG276402.stripy.json" -> "CPG276402")
     filename = Path(input_json).name
@@ -140,14 +147,6 @@ def main(
     list_of_available_genes = [list(d.keys())[0] for d in listofdictionarydata]
     missing_genes = [gene for gene in loci_list if gene not in list_of_available_genes]
     stripyanalysis_time = data.get('JobDetails', {}).get('TimeOfAnalysis', 'N/A')
-    # log the missing genes
-    with open(logfile, 'a') as handle:
-        if missing_genes:
-            handle.write(
-                f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}\n'
-            )
-        else:
-            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\n')
 
     loguru.logger.info(f'  Available loci in input JSON: {list_of_available_genes}')
     loguru.logger.info(f'  Missing loci for this report: {missing_genes}')
@@ -161,16 +160,50 @@ def main(
     temp_data['GenotypingResults'] = subset_list
 
     genotyping_results = temp_data['GenotypingResults']
+    loci_of_interest = {}
     for locus_item in genotyping_results:
         # Each locus_item is a dictionary with one key (the Locus ID)
         # Use .items() to get the (key, value) pair. Since there's only one,
         # the loop will run exactly once per item.
-        for _locus_id, details_dict in locus_item.items():
-            flag_status = details_dict.get('Flag')
+        for locus_id, details_dict in locus_item.items():
+            flag_status = details_dict.get('Flag', 0)
+            allele_status_list = details_dict.get('Alleles', [])
+            allele_flag = ''
+            allele_pop_outlier_counter = 0
+            for allele_dict in allele_status_list:
+                allele_flag += allele_dict.get('Range', '')
+                if allele_dict.get('IsPopulationOutlier') is True:
+                    allele_pop_outlier_counter += 1
 
             # You can add conditional logic here, e.g., to check for non-zero flags
             if flag_status < subset_svg_flag and 'SVG' in details_dict:
                 del details_dict['SVG']
+
+            if flag_status == 3:
+                loci_of_interest[locus_id] = 'Red'
+                continue
+
+            if flag_status == 2:
+                loci_of_interest[locus_id] = 'Orange'
+                continue
+
+            if flag_status == 1 and ('pathogenic' in allele_flag):
+                loci_of_interest[locus_id] = 'Pink'
+                continue
+
+            if flag_status == 1 and allele_pop_outlier_counter > 0:
+                loci_of_interest[locus_id] = 'Grey'
+
+    # log the missing genes
+    with open(logfile, 'a') as handle:
+        line_to_write = ','.join(f'{locus}:{color}' for locus, color in loci_of_interest.items())
+        if missing_genes:
+            handle.write(
+                f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\t{", ".join(missing_genes)}'
+                f'\t{line_to_write}\n'
+            )
+        else:
+            handle.write(f'{sample_id}\t{report_type}\t{external_id}\t{stripyanalysis_time}\tNone\t{line_to_write}\n')
 
     temp_data['GenotypingResults'] = genotyping_results
     temp_data['JobDetails'] = temp_data['JobDetails'].copy()

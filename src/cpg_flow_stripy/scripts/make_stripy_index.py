@@ -21,6 +21,8 @@ class Entry:
     ext_sample: str
     family: str
     url: str
+    loci_of_interest: dict[str, list[str]]
+    affected_status: str
 
     def __key(self) -> tuple[str, str, str]:
         return self.sample, self.report_type, self.url
@@ -30,20 +32,32 @@ class Entry:
 
 
 def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> list[Entry]:
-    """Digest the per-report STRipy data - dates, subset ID, missing loci, ... pathogenic?"""
+    """
+    Digest the per-report STRipy data - dates, subset ID, missing loci, and interesting loci.
+
+    Also extracts interesting loci (if any) which were flagged during analysis for each sample.
+    """
 
     report_objects: list[Entry] = []
 
     with open(log_path) as f:
         for line in f:
-            if not line.rstrip():
+            if not line.strip():
                 continue
 
             # break up the logging line, turn it into an index Entry
-            line_list = line.split('\t')
+            line_list = line.rstrip('\n').split('\t')
 
             cpg_id = line_list[0]
             report_type = line_list[1]
+
+            # Extract loci of interest from column 5 (color -> list of loci)
+            loci_of_interest: dict[str, list[str]] = defaultdict(list)
+            if len(line_list) > 5 and line_list[5]:
+                for locus_color in line_list[5].split(','):
+                    if ':' in locus_color:
+                        locus, color = locus_color.split(':', 1)
+                        loci_of_interest[color].append(locus)
 
             report_objects.append(
                 Entry(
@@ -55,6 +69,8 @@ def digest_logging(log_path: str, index_manifest: dict[str, dict[str, str]]) -> 
                     missing=line_list[4].rstrip(),
                     family=index_manifest[cpg_id]['family'],
                     url=index_manifest[cpg_id][report_type],
+                    loci_of_interest=loci_of_interest,
+                    affected_status=index_manifest[cpg_id]['affected_status'],
                 ),
             )
     return report_objects
@@ -65,13 +81,14 @@ def digest_index_manifest(manifest_path: str) -> dict[str, dict[str, str]]:
     manifest_details: dict[str, dict[str, str]] = defaultdict(dict)
     with open(manifest_path) as f:
         for line in f:
-            line_list = line.rstrip().split('\t')
+            line_list = line.rstrip('\n').split('\t')
             cpg_id = line_list[0]
 
             manifest_details[cpg_id] |= {
                 'family': line_list[1],
                 line_list[3]: line_list[4],
                 'ext_participant': line_list[2],
+                'affected_status': line_list[5],
             }
 
     return dict(manifest_details)
