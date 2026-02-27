@@ -43,11 +43,10 @@ COMBINED_QUERY = gql(
 )
 
 
-def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> tuple[dict[str, list[str]], dict[str, str]]:
+def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> dict[str, dict[str, str | int]]:
     """
-    Returns two dictionaries:
-    1. cpg_to_family: {cpgID: [FamilyID, ParticipantExternalID]}
-    2. cpg_to_affected: {cpgID: affected_status}
+    Returns a dictionary mapping cpgID to metadata:
+    {cpgID: {"family_id": str, "external_id": str, "affected": int or str}}
     """
 
     # Handle test environment naming conventions
@@ -58,33 +57,28 @@ def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> tuple[dict[str, l
     variables = {'project': query_dataset, 'sgIds': relevant_ids}
     result = query(COMBINED_QUERY, variables=variables)
 
-    cpg_to_family = {}
-    cpg_to_affected = {}
+    cpg_metadata = {}
 
-    # Safeguard against empty results
     sequencing_groups = result.get('project', {}).get('sequencingGroups', [])
 
     for group in sequencing_groups:
         cpg_id = group.get('id')
         try:
             participant = group['sample']['participant']
-            ext_id = group['sample']['participant']['externalId']
-            family_id = group['sample']['participant']['families'][0]['externalId']
-
-            # affected is usually an integer (0, 1, 2) or boolean
-            # We take the status from the first family relationship found
+            ext_id = participant['externalId']
+            family_id = participant['families'][0]['externalId']
             affected = participant['familyParticipants'][0]['affected']
-
-            cpg_to_family[cpg_id] = [family_id, ext_id]
-            cpg_to_affected[cpg_id] = affected
-
+            cpg_metadata[cpg_id] = {
+                'family_id': family_id,
+                'external_id': ext_id,
+                'affected': affected,
+            }
         except (KeyError, IndexError, TypeError):
-            # If the ID is one we specifically asked for, we should know if data is missing
             if cpg_id in relevant_ids:
                 print(f'Warning: Missing metadata for requested ID {cpg_id}')
             continue
 
-    return cpg_to_family, cpg_to_affected
+    return cpg_metadata
 
 
 def run_stripy_pipeline(
@@ -254,7 +248,7 @@ def make_index_page(
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_glob_ids = list(inputs.keys())
-    cpg_fam_mapping, affected_map = get_cpg_metadata(dataset_name, cpg_glob_ids)
+    cpg_metadata = get_cpg_metadata(dataset_name, cpg_glob_ids)
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
@@ -262,11 +256,10 @@ def make_index_page(
     # an object to store all the content we need to write
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
-        id_list: list[str] = cpg_fam_mapping[cpg_id]
-        fam_id = id_list[0]
-        external_id = id_list[1]
+        fam_id = cpg_metadata[cpg_id]['family_id']
+        external_id = cpg_metadata[cpg_id]['external_id']
+        affected = cpg_metadata[cpg_id]['affected']
         # possible values for affected:0(unknown), 1(unaffected), 2(affected) -9(unknown)
-        affected = affected_map.get(cpg_id, 'Unknown')
         match affected:
             case 1:
                 affected_status = 'Unaffected'
