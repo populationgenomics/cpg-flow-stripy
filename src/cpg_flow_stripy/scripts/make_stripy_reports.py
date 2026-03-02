@@ -160,6 +160,7 @@ def main(
     temp_data['GenotypingResults'] = subset_list
 
     genotyping_results = temp_data['GenotypingResults']
+    sample_sex = temp_data.get('JobDetails', {}).get('SampleSex', 'Unknown')
     loci_of_interest = {}
     for locus_item in genotyping_results:
         # Each locus_item is a dictionary with one key (the Locus ID)
@@ -168,6 +169,8 @@ def main(
         for locus_id, details_dict in locus_item.items():
             flag_status = details_dict.get('Flag', 0)
             allele_status_list = details_dict.get('Alleles', [])
+            coords = details_dict.get('TargetedLocus', {}).get('Coordinates') or ''
+            ischromx = coords.startswith('chrX')
             allele_flag = ''
             allele_pop_outlier_counter = 0
             for allele_dict in allele_status_list:
@@ -180,6 +183,11 @@ def main(
                 del details_dict['SVG']
 
             if flag_status == 3:
+                loci_of_interest[locus_id] = 'Red'
+                continue
+
+            if flag_status == 1 and ('pathogenic' in allele_flag) and sample_sex == 'Male' and ischromx:
+                # Edge case for X-linked pathogenic variants in Males, which should be flagged as red, not pink
                 loci_of_interest[locus_id] = 'Red'
                 continue
 
