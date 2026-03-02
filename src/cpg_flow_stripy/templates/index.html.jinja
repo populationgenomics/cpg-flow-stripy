@@ -70,6 +70,18 @@
         display: none !important;
       }
 
+      /* Style the affected status dropdown to match tablesorter filter inputs */
+      #affectedStatusDropdown {
+        width: 100%;
+        padding: 4px 6px;
+        border: 1px solid #767676;
+        border-radius: 3px;
+        font-size: 12px;
+        height: 28px;
+        box-sizing: border-box;
+        background-color: #fff;
+      }
+
     </style>
   </head>
 
@@ -304,11 +316,26 @@
           }
         })
 
-        // Hide the filter cell for loci column (index 7) on load since column starts hidden
+        // Hide the filter cell for loci column (index 8) on load since column starts hidden
+        // Replace the Affected Status filter (index 4) with a dropdown
         setTimeout(function() {
           const filterRow = document.querySelector('#report-table .tablesorter-filter-row');
-          if (filterRow && filterRow.cells[7]) {
-            filterRow.cells[7].style.display = 'none';
+          if (filterRow) {
+            // Hide loci column filter
+            if (filterRow.cells[8]) {
+              filterRow.cells[8].style.display = 'none';
+            }
+            // Replace Affected Status filter with dropdown
+            if (filterRow.cells[4]) {
+              const cell = filterRow.cells[4];
+              cell.innerHTML = `
+                <select id="affectedStatusDropdown" class="form-select form-select-sm" onchange="filterByAffectedStatus(this.value)">
+                  <option value="All">All</option>
+                  <option value="Affected">Affected</option>
+                  <option value="Unaffected">Unaffected</option>
+                </select>
+              `;
+            }
           }
         }, 100);
 
@@ -434,9 +461,9 @@
           }
         });
 
-        // Also hide/show the filter input for the loci column (index 7)
+        // Also hide/show the filter input for the loci column (index 8)
         if (filterRow) {
-          const filterCell = filterRow.cells[7];
+          const filterCell = filterRow.cells[8];
           if (filterCell) {
             filterCell.style.display = isHidden ? '' : 'none';
           }
@@ -481,6 +508,25 @@
 
         // Update filter dropdown visibility
         updateFilterVisibility();
+      }
+
+      function filterByAffectedStatus(status) {
+        const table = document.getElementById('report-table');
+        const rows = table.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+          const affectedCell = row.cells[4]; // Affected Status is column index 4
+          if (affectedCell) {
+            const cellValue = affectedCell.textContent.trim();
+            if (status === 'All') {
+              row.style.display = '';
+            } else if (cellValue === status) {
+              row.style.display = '';
+            } else {
+              row.style.display = 'none';
+            }
+          }
+        });
       }
     </script>
   </body>
