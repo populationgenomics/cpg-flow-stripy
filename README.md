@@ -12,7 +12,7 @@ The short-read data is processed at the sequencing group level, and STRipy repor
 ```bash
 analysis-runner \
     --skip-repo-checkout \
-    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.3.1-1 \
+    --image australia-southeast1-docker.pkg.dev/cpg-common/images/cpg-flow-stripy:0.3.2-1 \
     --config src/cpg_flow_stripy/config_template.toml \
     --config stripy_loci.toml \  # containing the inputs_cohorts and sequencing_type
     --dataset seqr \
