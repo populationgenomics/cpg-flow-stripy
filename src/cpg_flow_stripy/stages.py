@@ -7,7 +7,7 @@ See https://gitlab.com/andreassh/stripy-pipeline
 from typing import Any
 
 from cpg_flow import stage, targets
-from cpg_utils import Path, config
+from cpg_utils import Path, config, to_path
 
 from cpg_flow_stripy.jobs import stripy
 from cpg_flow_stripy.utils import get_loci_lists
@@ -15,13 +15,12 @@ from cpg_flow_stripy.utils import get_loci_lists
 
 def _update_meta(output_path: str) -> dict[str, Any]:
     """Add the detected outlier loci to the analysis meta."""
-    from cloudpathlib.anypath import to_anypath  # noqa: PLC0415
 
     # Munge JSON path into log path
     log_path = output_path.replace('.json', '.log.txt')
 
     outlier_loci = {}
-    with to_anypath(log_path).open() as f:
+    with to_path(log_path).open() as f:
         for line in f:
             if not line.strip().rstrip():
                 continue

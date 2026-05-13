@@ -6,9 +6,10 @@ import json
 from typing import TYPE_CHECKING
 
 import loguru
+from metamist.graphql import gql, query
+
 from cpg_flow import targets
 from cpg_utils import Path, config, hail_batch, to_path
-from metamist.graphql import gql, query
 
 from cpg_flow_stripy.utils import get_loci_lists
 
