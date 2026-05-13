@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pysam
 
-from cpg_utils import to_path
+from cpg_utils import config, to_path
 
 CONTIG_ORDER = [f'chr{x}' for x in list(range(1, 23))] + ['chrX', 'chrY', 'chrM', 'chrMT']
 HEADER_LINES = [
@@ -47,6 +47,15 @@ HEADER_LINES = [
     ('chrY', 57227415),
     ('chrM', 16569),
 ]
+
+
+def get_limited_locus_list() -> list[str] | None:
+    """Try to get the finite list of loci from config, if available."""
+    try:
+        return config.config_retrieve(['stripy', 'loci_lists', 'default_with_exclusions'])
+    except config.ConfigError:
+        print('No CPG config detected, using all loci')
+        return None
 
 
 def parse_coords(coord: str) -> tuple[str, int, int] | None:
@@ -103,13 +112,12 @@ def load_sample(json_path: str, sample_name_override: str | None = None) -> tupl
             alleles = locus['Alleles']
             a1 = alleles[0]
             a2 = alleles[1] if len(alleles) > 1 else None
-            locus_id = str(tl.get('LocusID') or locus_name)
             motif = tl['Motif']
-            loci[locus_id] = {
+            loci[locus_name] = {
                 'chrom': chrom,
                 'pos': start,
                 'end': end,
-                'id': locus_id,
+                'id': locus_name,
                 'motif': motif,
                 'period': len(motif),
                 'a1_rep': _to_float(a1['Repeats']),
@@ -198,6 +206,15 @@ def get_header(sample_names: list[str]) -> pysam.VariantHeader:
     return header
 
 
+def convert_range_to_gt(range_val: str | None) -> int | None:
+    """Converts the per-allele range to an integer, for embedding in GT."""
+    if range_val is None:
+        return None
+    if range_val.lower() == 'pathogenic':
+        return 1
+    return 0
+
+
 def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: str) -> None:
     """
     samples: list of (sample_name, loci_dict) tuples
@@ -206,9 +223,14 @@ def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: 
 
     header = get_header(sample_names=[sam_bit[0] for sam_bit in samples])
 
+    only_loci = get_limited_locus_list()
+
     canonical: dict[str, dict] = {}
     for _, loci in samples:
         for locus_id, loc in loci.items():
+            # if we got a list of specific loci, only use that finite list - ignore everything else
+            if (only_loci is not None) and (locus_id not in only_loci):
+                continue
             canonical.setdefault(locus_id, loc)
 
     # double sort contigs by both chrom and position
@@ -237,6 +259,7 @@ def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: 
                 s_loc = loci.get(loc['id'])
                 s = rec.samples[sample_name]
                 if s_loc is None:
+                    s['GT'] = (None, None)
                     s['REPCN'] = (None, None)
                     s['REPCI1'] = (0, 0)
                     s['REPCI2'] = (0, 0)
@@ -245,16 +268,7 @@ def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: 
                     s['DP'] = None
                     s['STR_FILTER'] = ['.']
                 else:
-                    if s_loc['a2_range'].lower() == 'pathogenic':
-                        a2 = 1
-                    elif s_loc['a2_range'] is None:
-                        a2 = None
-                    else:
-                        a2 = 0
-                    s['GT'] = (
-                        1 if s_loc['a1_range'].lower() == 'pathogenic' else 0,
-                        a2,
-                    )
+                    s['GT'] = (convert_range_to_gt(s_loc['a1_range']), convert_range_to_gt(s_loc['a2_range']))
                     s['REPCN'] = (s_loc['a1_rep'], s_loc['a2_rep'])
                     s['REPCI1'] = s_loc['a1_ci']
                     s['REPCI2'] = s_loc['a2_ci']
