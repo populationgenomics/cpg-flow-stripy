@@ -86,20 +86,18 @@ def _ci_tuple(allele: dict[str, dict[str, int]]) -> tuple[int, int]:
     return allele['CI'].get('Min', 0), allele['CI'].get('Max', 0)
 
 
-def load_sample(json_path: str, sample_name_override: str | None = None) -> tuple[str, dict]:
+def load_sample(json_path: str) -> tuple[str, dict]:
     """Load a STRipy JSON and return (sample_name, loci_dict keyed by locus_id)."""
     with to_path(json_path).open() as f:
         data = json.load(f)
 
-    if sample_name_override:
-        sample_name = sample_name_override
+    # hard wired to pull the SampleID from the input filename - consider reverting
+    input_file = data.get('JobDetails', {}).get('InputFile', '')
+    if input_file:
+        stem = Path(input_file).stem
+        sample_name = stem.split('__')[0]
     else:
-        input_file = data.get('JobDetails', {}).get('InputFile', '')
-        if input_file:
-            stem = Path(input_file).stem
-            sample_name = stem.split('__')[0]
-        else:
-            sample_name = Path(json_path).stem.split('.')[0]
+        sample_name = Path(json_path).stem.split('.')[0]
 
     loci = {}
     for entry in data.get('GenotypingResults', []):
@@ -286,19 +284,8 @@ def main() -> None:
     )
     ap.add_argument('--json', required=True, nargs='+', help='STRipy JSON report(s); one per sample')
     ap.add_argument('-o', '--out', required=True, help='Output VCF')
-    ap.add_argument(
-        '--sample-names',
-        nargs='+',
-        default=None,
-        help='Sample names (must match number of --json files if provided; defaults to ID extracted from JSON)',
-    )
     args = ap.parse_args()
-
-    if args.sample_names and len(args.sample_names) != len(args.json):
-        ap.error(f'--sample-names count ({len(args.sample_names)}) must match --json count ({len(args.json)})')
-
-    overrides = args.sample_names or [None] * len(args.json)
-    samples = [load_sample(p, name) for p, name in zip(args.json, overrides, strict=True)]
+    samples = [load_sample(p) for p in args.json]
 
     write_multisample_vcf(samples, args.out)
 
