@@ -6,10 +6,14 @@ Parses a GFF3 file, and generates a JSON file mapping Gene Symbols to Gene ID (E
 - start
 - end
 - gene details
+
+This is built for and tested on the ensembl GFF file, though should generally work on valid GFF3 format files
+https://ftp.ensembl.org/pub/release-116/vertebrates/gff3/homo_sapiens/Homo_sapiens.GRCh38.116.chr.gff3.gz
 """
 
 import gzip
 import json
+import logging
 import re
 from argparse import ArgumentParser
 
@@ -78,7 +82,7 @@ def generate_gene_lookup(gff3_file: str) -> dict[str, str]:
             if gene_id_match and gene_name_match:
                 output_json[gene_name_match.group(1)] = gene_id_match.group(1)
             else:
-                print(f'Failed to extract gene name from {line_as_list[DETAILS_INDEX]}')
+                logging.debug(f'Failed to extract gene name from {line_as_list[DETAILS_INDEX]}')
     return output_json
 
 
@@ -87,6 +91,9 @@ def cli_main() -> None:
     parser.add_argument('--gff3', help='Path to the compressed GFF3 file', required=True)
     parser.add_argument('--output', help='Path to output JSON.', required=True)
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+
     main(gff3_file=args.gff3, output=args.output)
 
 

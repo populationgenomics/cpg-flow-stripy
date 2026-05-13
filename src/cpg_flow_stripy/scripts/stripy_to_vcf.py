@@ -91,7 +91,7 @@ def load_sample(json_path: str) -> tuple[str, dict]:
     with to_path(json_path).open() as f:
         data = json.load(f)
 
-    # hard wired to pull the SampleID from the input filename - consider reverting
+    # hard-wired to pull the SampleID from the input filename - consider reverting
     input_file = data.get('JobDetails', {}).get('InputFile', '')
     if input_file:
         stem = Path(input_file).stem
@@ -149,7 +149,8 @@ VCF_HEADER = {
             'Description': 'Associated disease symbols for this locus (| separated)',
         },
         {'ID': 'LOCUS', 'Number': '1', 'Type': 'String', 'Description': 'Gene/locus identifier from STRipy'},
-        {'ID': 'GENE', 'Number': '1', 'Type': 'String', 'Description': 'Gene inferred from STRipy locus identifier'},
+        {'ID': 'SYMBOL', 'Number': '1', 'Type': 'String', 'Description': 'Gene inferred from STRipy locus identifier'},
+        {'ID': 'GENE', 'Number': '1', 'Type': 'String', 'Description': 'ENSG ID inferred from Gene Symbol'},
     ],
     'FORMAT': [
         {'ID': 'GT', 'Number': '1', 'Type': 'String', 'Description': 'Unphased genotype'},
@@ -213,17 +214,26 @@ def convert_range_to_gt(range_val: str | None) -> int | None:
     return 0
 
 
-def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: str) -> None:
+def write_multisample_vcf(
+    samples: list[tuple[str, dict[str, dict]]], out_path: str, gene_map: str | None = None
+) -> None:
     """
-    samples: list of (sample_name, loci_dict) tuples
-    loci_dict: dict keyed by locus_id -> locus data
+    Integrate the per-sample data into a union VCF
+
+    Args:
+        samples: list of (sample_name, loci_dict) tuples
+        out_path: vcf path to write output to. PySam will write compressed if ending is gz/bgz
+        gene_map: optional, file path to a JSON dict, mapping gene symbols to gene IDs
     """
+
+    gene_lookup = json.load(open(gene_map)) if gene_map else {}
 
     header = get_header(sample_names=[sam_bit[0] for sam_bit in samples])
 
     only_loci = get_limited_locus_list()
 
     canonical: dict[str, dict] = {}
+
     for _, loci in samples:
         for locus_id, loc in loci.items():
             # if we got a list of specific loci, only use that finite list - ignore everything else
@@ -251,7 +261,11 @@ def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: 
                 rec.info['PERIOD'] = int(loc['period'])
             rec.info['DISEASES'] = loc['diseases']
             rec.info['LOCUS'] = loc['id']
-            rec.info['GENE'] = loc['id'].split('_')[0]
+
+            # extract the gene symbol from STRipy annotations
+            symbol = loc['id'].split('_')[0]
+            rec.info['SYMBOL'] = symbol
+            rec.info['GENE'] = gene_lookup.get(symbol, symbol)
 
             for sample_name, loci in samples:
                 s_loc = loci.get(loc['id'])
@@ -279,15 +293,14 @@ def write_multisample_vcf(samples: list[tuple[str, dict[str, dict]]], out_path: 
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(
-        description='Convert STRipy JSON output(s) into a multi-sample VCF with SV-style STR annotations.'
-    )
+    ap = argparse.ArgumentParser(description='Convert STRipy JSON output(s) into a multi-sample VCF.')
     ap.add_argument('--json', required=True, nargs='+', help='STRipy JSON report(s); one per sample')
-    ap.add_argument('-o', '--out', required=True, help='Output VCF')
+    ap.add_argument('--out', required=True, help='Output VCF')
+    ap.add_argument('--dict', default=None, help='A JSON dict of Gene Symbol:Gene ID to update annotation')
     args = ap.parse_args()
     samples = [load_sample(p) for p in args.json]
 
-    write_multisample_vcf(samples, args.out)
+    write_multisample_vcf(samples, args.out, args.dict)
 
 
 if __name__ == '__main__':
