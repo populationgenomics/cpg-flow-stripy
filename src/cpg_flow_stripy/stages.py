@@ -150,7 +150,7 @@ class MakeIndexPage(stage.DatasetStage):
 
 @stage.stage
 class ParseGffMapping(stage.MultiCohortStage):
-    """Read in a GFF3 file, parse into a Gene Symbol: Gene ID mapping."""
+    """Read in a GFF3 file, parse into a {Gene Symbol: Gene ID} mapping."""
 
     def expected_outputs(self, multicohort: targets.MultiCohort) -> Path:
         return (
