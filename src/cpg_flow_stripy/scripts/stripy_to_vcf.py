@@ -12,6 +12,7 @@ Uses fixed contigs (GRCh38) for the header, instead of relying on a reference in
 
 import argparse
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -102,11 +103,16 @@ def load_sample(json_path: str) -> tuple[str, dict]:
     loci = {}
     for entry in data.get('GenotypingResults', []):
         for locus_name, locus in entry.items():
+            tl = locus['TargetedLocus']
+
             # add flexibility if the Alleles aren't populated at all
             if 'Alleles' not in locus:
+                explain_string = f'Parsing {sample_name}, locus {tl["LocusID"]}, no Alleles present - skipping. '
+                if 'Filter' in locus:
+                    explain_string += f'Filter: {locus["Filter"]} - '
+                logging.warning(explain_string)
                 continue
 
-            tl = locus['TargetedLocus']
             parsed = parse_coords(tl['Coordinates'])
             if not parsed:
                 continue
