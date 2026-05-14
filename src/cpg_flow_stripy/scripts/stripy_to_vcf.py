@@ -102,6 +102,10 @@ def load_sample(json_path: str) -> tuple[str, dict]:
     loci = {}
     for entry in data.get('GenotypingResults', []):
         for locus_name, locus in entry.items():
+            # add flexibility if the Alleles aren't populated at all
+            if 'Alleles' not in locus:
+                continue
+
             tl = locus['TargetedLocus']
             parsed = parse_coords(tl['Coordinates'])
             if not parsed:
