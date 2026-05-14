@@ -166,7 +166,7 @@ class ParseGffMapping(stage.MultiCohortStage):
         return self.make_outputs(multicohort, data=output, jobs=job)
 
 
-@stage.stage(required_stages=[ParseGffMapping, RunStripy])
+@stage.stage(analysis_type='vcf', analysis_keys=['joint'], required_stages=[ParseGffMapping, RunStripy])
 class MakeStripyJointCall(stage.DatasetStage):
     """Takes the STRipy JSON files, interprets as VCFs, glues together into a joint call."""
 
