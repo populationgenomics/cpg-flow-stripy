@@ -157,7 +157,7 @@ class ParseGffMapping(stage.MultiCohortStage):
             to_path(config.config_retrieve(['storage', 'common', 'default']))
             / 'references'
             / 'stripy'
-            / 'symbol_id_map.json'
+            / 'gene_symbol_to_id_map.json'
         )
 
     def queue_jobs(self, multicohort: targets.MultiCohort, inputs: stage.StageInput) -> stage.StageOutput:
