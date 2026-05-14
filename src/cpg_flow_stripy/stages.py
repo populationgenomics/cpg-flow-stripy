@@ -6,10 +6,10 @@ See https://gitlab.com/andreassh/stripy-pipeline
 
 from typing import Any
 
-from cpg_flow import stage, targets
+from cpg_flow import stage, targets, workflow
 from cpg_utils import Path, config, to_path
 
-from cpg_flow_stripy.jobs import stripy
+from cpg_flow_stripy.jobs import convert_gff, create_stripy_joint_call, stripy
 from cpg_flow_stripy.utils import get_loci_lists
 
 
@@ -66,7 +66,7 @@ class RunStripy(stage.SequencingGroupStage):
             job_attrs=self.get_job_attrs(sequencing_group),
         )
 
-        return self.make_outputs(sequencing_group, data=outputs, jobs=[j])
+        return self.make_outputs(sequencing_group, data=outputs, jobs=j)
 
 
 @stage.stage(required_stages=RunStripy)
@@ -146,3 +146,47 @@ class MakeIndexPage(stage.DatasetStage):
         )
 
         return self.make_outputs(dataset, data=outputs, jobs=job)
+
+
+@stage.stage
+class ParseGffMapping(stage.MultiCohortStage):
+    """Read in a GFF3 file, parse into a Gene Symbol: Gene ID mapping."""
+
+    def expected_outputs(self, multicohort: targets.MultiCohort) -> Path:
+        return (
+            to_path(config.config_retrieve(['storage', 'common', 'default']))
+            / 'references'
+            / 'stripy'
+            / 'symbol_id_map.json'
+        )
+
+    def queue_jobs(self, multicohort: targets.MultiCohort, inputs: stage.StageInput) -> stage.StageOutput:
+        output = self.expected_outputs(multicohort)
+        job = convert_gff.create_gff_conversion_job(output)
+        return self.make_outputs(multicohort, data=output, jobs=job)
+
+
+@stage.stage(required_stages=[ParseGffMapping, RunStripy])
+class MakeStripyJointCall(stage.DatasetStage):
+    """Takes the STRipy JSON files, interprets as VCFs, glues together into a joint call."""
+
+    def expected_outputs(self, dataset: targets.Dataset) -> dict[str, Path]:
+        return {'joint': dataset.prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'joint_call.vcf.bgz'}
+
+    def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
+        output = self.expected_outputs(dataset)
+
+        # pull all single SG outputs from the STRipy stage
+        sg_inputs = inputs.as_dict_by_target(RunStripy)
+
+        # STRipy JSONs relating SG IDs in this Dataset
+        dataset_jsons = {sgid: sg_inputs[sgid]['json'] for sgid in dataset.get_sequencing_group_ids()}
+
+        # find the gene ID lookup file
+        mapping = inputs.as_path(target=workflow.get_multicohort(), stage=ParseGffMapping)
+
+        job = create_stripy_joint_call.create_joint_call(
+            json_paths=dataset_jsons, gene_lookup=mapping, output=output['joint']
+        )
+
+        return self.make_outputs(dataset, data=output, jobs=job)

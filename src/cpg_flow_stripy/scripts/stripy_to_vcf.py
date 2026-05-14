@@ -214,6 +214,15 @@ def convert_range_to_gt(range_val: str | None) -> int | None:
     return 0
 
 
+def get_gene_lookup(map_path: str | None = None) -> dict[str, str]:
+    """Pull out the dictionary reading logic."""
+    lookup: dict[str, str] = {}
+    if map_path is not None:
+        with to_path(map_path).open() as handle:
+            lookup = json.load(handle)
+    return lookup
+
+
 def write_multisample_vcf(
     samples: list[tuple[str, dict[str, dict]]], out_path: str, gene_map: str | None = None
 ) -> None:
@@ -226,7 +235,7 @@ def write_multisample_vcf(
         gene_map: optional, file path to a JSON dict, mapping gene symbols to gene IDs
     """
 
-    gene_lookup = json.load(open(gene_map)) if gene_map else {}
+    gene_lookup = get_gene_lookup(gene_map)
 
     header = get_header(sample_names=[sam_bit[0] for sam_bit in samples])
 
@@ -295,12 +304,13 @@ def write_multisample_vcf(
 def main() -> None:
     ap = argparse.ArgumentParser(description='Convert STRipy JSON output(s) into a multi-sample VCF.')
     ap.add_argument('--json', required=True, nargs='+', help='STRipy JSON report(s); one per sample')
-    ap.add_argument('--out', required=True, help='Output VCF')
-    ap.add_argument('--dict', default=None, help='A JSON dict of Gene Symbol:Gene ID to update annotation')
+    ap.add_argument('--output', required=True, help='Output VCF')
+    ap.add_argument('--mapping', default=None, help='A JSON dict of Gene Symbol:Gene ID to update annotation')
     args = ap.parse_args()
+
     samples = [load_sample(p) for p in args.json]
 
-    write_multisample_vcf(samples, args.out, args.dict)
+    write_multisample_vcf(samples=samples, out_path=args.output, gene_map=args.mapping)
 
 
 if __name__ == '__main__':
