@@ -262,7 +262,7 @@ def write_multisample_vcf(
             rec.id = str(loc['id'])
             rec.ref = 'N'
             rec.alts = ('<STR>',)
-            rec.filter.add(loc['filter'] if loc['filter'] else 'PASS')
+            rec.filter.add('PASS')
             rec.info['SVTYPE'] = 'STR'
             if loc['motif']:
                 rec.info['RU'] = loc['motif']
