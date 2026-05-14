@@ -121,7 +121,7 @@ def load_sample(json_path: str) -> tuple[str, dict]:
                 'a1_rep': _to_float(a1['Repeats']),
                 'a2_rep': _to_float(a2['Repeats']) if a2 is not None else None,
                 'a1_ci': _ci_tuple(a1),
-                'a2_ci': _ci_tuple(a2) if a2 is not None else (0, 0),
+                'a2_ci': _ci_tuple(a2) if a2 is not None else (None, None),
                 'a1_range': a1['Range'],
                 'a2_range': a2['Range'] if a2 else None,
                 'a1_out': _to_outlier(a1['IsPopulationOutlier']),
@@ -282,8 +282,8 @@ def write_multisample_vcf(
                 if s_loc is None:
                     s['GT'] = (None, None)
                     s['REPCN'] = (None, None)
-                    s['REPCI1'] = (0, 0)
-                    s['REPCI2'] = (0, 0)
+                    s['REPCI1'] = (None, None)
+                    s['REPCI2'] = (None, None)
                     s['OUTLIER'] = (None, None)
                     s['ZSCORE'] = (None, None)
                     s['DP'] = None
