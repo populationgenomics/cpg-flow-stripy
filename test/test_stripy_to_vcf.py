@@ -21,6 +21,8 @@ def _make_locus(locus_id, chrom, pos, end, motif, a1_rep, a2_rep, coverage=30, f
         'a1_ci': (a1_rep, a1_rep),
         'a2_ci': (a2_rep, a2_rep) if a2_rep is not None else (0, 0),
         'a1_out': 0,
+        'a1_range': 'pathogenic',
+        'a2_range': None,
         'a2_out': 0,
         'a1_z': 0.5,
         'a2_z': 0.5,
