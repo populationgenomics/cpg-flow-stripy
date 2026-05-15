@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 from cpg_flow.workflow import run_workflow
 from cpg_utils import hail_batch
 
-from cpg_flow_stripy.stages import MakeIndexPage
+from cpg_flow_stripy.stages import MakeIndexPage, MakeStripyJointCall
 
 
 def cli_main() -> None:
@@ -21,7 +21,7 @@ def cli_main() -> None:
     args = parser.parse_args()
     if not args.dry_run:
         hail_batch.get_batch(attributes={'stripy': 'true'})
-    run_workflow(name='stripy', stages=[MakeIndexPage], dry_run=args.dry_run)
+    run_workflow(name='stripy', stages=[MakeIndexPage, MakeStripyJointCall], dry_run=args.dry_run)
 
 
 if __name__ == '__main__':

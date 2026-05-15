@@ -23,3 +23,6 @@ log_flag_threshold = -1
 output_html = true
 output_json = true
 verbose = true
+
+[references]
+ensembl_gff3 = "gs://cpg-common-main/references/ensembl_116/GRCh38_chrM_renamed.gff3.gz"

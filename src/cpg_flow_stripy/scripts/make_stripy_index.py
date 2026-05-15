@@ -6,6 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 import jinja2
+
 from cpg_utils import config
 
 
