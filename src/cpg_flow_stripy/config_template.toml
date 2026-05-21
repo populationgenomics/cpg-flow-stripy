@@ -17,6 +17,7 @@ analysis_type = "extended"
 subset_svg_flag_threshold = 1
 # Update the stripy config.json file, default found here:
 # https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/config.json?ref_type=heads
+
 [stripy.config]
 output_svg_flag_threshold = 0
 log_flag_threshold = -1
@@ -26,3 +27,6 @@ verbose = true
 
 [references]
 ensembl_gff3 = "gs://cpg-common-main/references/ensembl_116/GRCh38_chrM_renamed.gff3.gz"
+
+[stripy_vcf]
+storage = '50GiB'

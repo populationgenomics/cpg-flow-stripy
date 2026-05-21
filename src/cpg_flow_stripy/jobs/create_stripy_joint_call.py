@@ -15,7 +15,7 @@ def create_joint_call(json_paths: dict[str, Path], gene_lookup: Path, output: Pa
     batch = hail_batch.get_batch()
     job = batch.new_bash_job(name='Run JSON to multisample VCF conversion')
     job.image(config.config_retrieve(['workflow', 'driver_image']))
-    job.storage('10GiB')
+    job.storage(config.config_retrieve(['stripy_vcf', 'storage']))
 
     localised_jsons = [batch.read_input(jpath) for jpath in json_paths.values()]
 
