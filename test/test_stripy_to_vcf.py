@@ -29,6 +29,7 @@ def _make_locus(locus_id, chrom, pos, end, motif, a1_rep, a2_rep, coverage=30, f
         'coverage': coverage,
         'filter': filt,
         'diseases': 'DIS1',
+        'disease_details': 'Something|something_else',
     }
 
 
