@@ -106,12 +106,16 @@ def parse_disease_ranges(content: dict[str, str | dict[str, int]]) -> str:
     inheritance = content['Inheritance']
 
     # parse the normal range, or '.'
-    normal_range = content['NormalRange']
-    normal = '.' if normal_range == 'NA' else f'min{normal_range["Min"]}max{normal_range["Max"]}'
+    normal_range: dict[str, int] | str = content['NormalRange']
+    normal = '.'
+    if isinstance(normal_range, dict):
+        normal = f'min{normal_range["Min"]}max{normal_range["Max"]}'
 
     # parse the intermediate range, or '.'
-    inter_range = content['IntermediateRange']
-    intermediate = '.' if inter_range == 'NA' else f'min{inter_range["Min"]}max{inter_range["Max"]}'
+    inter_range: dict[str, int] | str = content['IntermediateRange']
+    intermediate = '.'
+    if isinstance(inter_range, dict):
+        intermediate = f'min{inter_range["Min"]}max{inter_range["Max"]}'
 
     # get the pathogenic cutoff used for this disease
     path = content['PathogenicCutoff']
@@ -206,7 +210,7 @@ VCF_HEADER = {
             'ID': 'DISEASE_DETAILS',
             'Number': '1',
             'Type': 'String',
-            'Description': '|-delimited details for each disease.',
+            'Description': '|-delimited details for each disease, in the form "diseaseSymbol__normal__intermediate__pathogenic", where normal and intermediate are in the form minXmaxY (or .), and pathogenic is a single integer.',  # noqa: E501
         },
         {
             'ID': 'REPCI1',
@@ -276,8 +280,10 @@ def get_gene_lookup(map_path: str | None = None) -> dict[str, str]:
     return lookup
 
 
-def write_multisample_vcf(
-    samples: list[tuple[str, dict[str, dict]]], out_path: str, gene_map: str | None = None
+def write_multisample_vcf(  # noqa: PLR0915
+    samples: list[tuple[str, dict[str, dict]]],
+    out_path: str,
+    gene_map: str | None = None,
 ) -> None:
     """
     Integrate the per-sample data into a union VCF
