@@ -89,9 +89,11 @@ def _ci_tuple(allele: dict[str, dict[str, int]]) -> tuple[int, int]:
 
 def parse_disease_ranges(content: dict[str, str | dict[str, int]]) -> str:
     """
-    Read the CorrespondingDisease block of the JSON block.
-    This is a hybrid String of normal, intermediate, and pathogenic range.
-    These occur per-disease, but there can be multiple per allele.
+    Read the CorrespondingDisease content of the locus' JSON dictionary.
+    This creates a hybrid String of Gene, MOI, normal and intermediate ranges, and pathogenic threshold.
+    These occur per-disease, and there can be multiple per allele.
+
+    example results: "HD__AD__min9max26__min27max35__36" or "DMD__XLR__min11max33__.__59"
 
     Args:
         content: the dictionary from STRipy's CorrespondingDisease data block
