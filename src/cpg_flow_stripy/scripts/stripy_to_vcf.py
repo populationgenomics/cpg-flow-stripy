@@ -210,7 +210,7 @@ VCF_HEADER = {
             'ID': 'DISEASE_DETAILS',
             'Number': '1',
             'Type': 'String',
-            'Description': '|-delimited details for each disease, in the form "diseaseSymbol__normal__intermediate__pathogenic", where normal and intermediate are in the form minXmaxY (or .), and pathogenic is a single integer.',  # noqa: E501
+            'Description': '|-delimited details for each disease, in the form diseaseSymbol__normal__intermediate__pathogenic',  # noqa: E501
         },
         {
             'ID': 'REPCI1',
