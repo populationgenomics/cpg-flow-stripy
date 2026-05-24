@@ -87,6 +87,39 @@ def _ci_tuple(allele: dict[str, dict[str, int]]) -> tuple[int, int]:
     return allele['CI'].get('Min', 0), allele['CI'].get('Max', 0)
 
 
+def parse_disease_ranges(content: dict[str, str | dict[str, int]]) -> str:
+    """
+    Read the CorrespondingDisease block of the JSON block.
+    This is a hybrid String of normal, intermediate, and pathogenic range.
+    These occur per-disease, but there can be multiple per allele.
+
+    Args:
+        content: the dictionary from STRipy's CorrespondingDisease data block
+
+    Returns:
+        A single aggregated String for all the details
+    """
+    # get the symbol for this disease
+    disease = content['DiseaseSymbol']
+
+    # the inheritance pattern
+    inheritance = content['Inheritance']
+
+    # parse the normal range, or '.'
+    normal_range = content['NormalRange']
+    normal = '.' if normal_range == 'NA' else f'min{normal_range["Min"]}max{normal_range["Max"]}'
+
+    # parse the intermediate range, or '.'
+    inter_range = content['IntermediateRange']
+    intermediate = '.' if inter_range == 'NA' else f'min{inter_range["Min"]}max{inter_range["Max"]}'
+
+    # get the pathogenic cutoff used for this disease
+    path = content['PathogenicCutoff']
+
+    # pull it all together
+    return f'{disease}__{inheritance}__{normal}__{intermediate}__{path}'
+
+
 def load_sample(json_path: str) -> tuple[str, dict]:
     """Load a STRipy JSON and return (sample_name, loci_dict keyed by locus_id)."""
     with to_path(json_path).open() as f:
@@ -105,12 +138,15 @@ def load_sample(json_path: str) -> tuple[str, dict]:
         for locus_name, locus in entry.items():
             tl = locus['TargetedLocus']
 
+            # create a |-delimited string for all ranges for all relevant disease for this locus
+            disease_deets = '|'.join(parse_disease_ranges(corr) for corr in tl['CorrespondingDisease'].values())
+
             # add flexibility if the Alleles aren't populated at all
             if 'Alleles' not in locus:
                 explain_string = f'Parsing {sample_name}, locus {tl["LocusID"]}, no Alleles present - skipping. '
                 if 'Filter' in locus:
                     explain_string += f'Filter: {locus["Filter"]} - '
-                logging.warning(explain_string)
+                logging.debug(explain_string)
                 continue
 
             parsed = parse_coords(tl['Coordinates'])
@@ -141,6 +177,7 @@ def load_sample(json_path: str) -> tuple[str, dict]:
                 'coverage': locus['Metadata']['Coverage'],
                 'filter': locus['Filter'],
                 'diseases': '|'.join(sorted({meta['DiseaseSymbol'] for meta in tl['CorrespondingDisease'].values()})),
+                'disease_details': disease_deets,
             }
 
     return sample_name, loci
@@ -165,6 +202,12 @@ VCF_HEADER = {
     'FORMAT': [
         {'ID': 'GT', 'Number': '1', 'Type': 'String', 'Description': 'Unphased genotype'},
         {'ID': 'REPCN', 'Number': '2', 'Type': 'Float', 'Description': 'Number of repeat units spanned by each allele'},
+        {
+            'ID': 'DISEASE_DETAILS',
+            'Number': '1',
+            'Type': 'String',
+            'Description': '|-delimited details for each disease.',
+        },
         {
             'ID': 'REPCI1',
             'Number': '2',
@@ -298,6 +341,7 @@ def write_multisample_vcf(
                     s['ZSCORE'] = (None, None)
                     s['DP'] = None
                     s['STR_FILTER'] = ['.']
+                    s['DISEASE_DETAILS'] = '.'
                 else:
                     s['GT'] = (convert_range_to_gt(s_loc['a1_range']), convert_range_to_gt(s_loc['a2_range']))
                     s['REPCN'] = (s_loc['a1_rep'], s_loc['a2_rep'])
@@ -307,6 +351,7 @@ def write_multisample_vcf(
                     s['ZSCORE'] = (s_loc['a1_z'], s_loc['a2_z'])
                     s['DP'] = int(s_loc['coverage'])
                     s['STR_FILTER'] = [str(s_loc['filter'])] if s_loc['filter'] else ['PASS']
+                    s['DISEASE_DETAILS'] = s_loc['disease_details']
 
             vf.write(rec)
 
