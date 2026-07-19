@@ -171,7 +171,7 @@ class MakeStripyJointCall(stage.DatasetStage):
     """Takes the STRipy JSON files, interprets as VCFs, glues together into a joint call."""
 
     def expected_outputs(self, dataset: targets.Dataset) -> dict[str, Path]:
-        return {'joint': dataset.prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'joint_call.vcf.bgz'}
+        return {'joint': dataset.prefix() / 'stripy' / dataset.get_alignment_inputs_hash() / 'joint_call.vcf.gz'}
 
     def queue_jobs(self, dataset: targets.Dataset, inputs: stage.StageInput) -> stage.StageOutput:
         output = self.expected_outputs(dataset)
@@ -186,7 +186,9 @@ class MakeStripyJointCall(stage.DatasetStage):
         mapping = inputs.as_path(target=workflow.get_multicohort(), stage=ParseGffMapping)
 
         job = create_stripy_joint_call.create_joint_call(
-            json_paths=dataset_jsons, gene_lookup=mapping, output=output['joint']
+            json_paths=dataset_jsons,
+            gene_lookup=mapping,
+            output=output['joint'],
         )
 
         return self.make_outputs(dataset, data=output, jobs=job)
