@@ -22,10 +22,7 @@ def create_joint_call(json_paths: dict[str, Path], gene_lookup: Path, output: Pa
     localised_mapping = batch.read_input(gene_lookup)
 
     job.declare_resource_group(
-        output={
-            'vcf.gz': '{root}.vcf.gz',
-            'vcf.gz.tbi': '{root}.vcf.gz.tbi'
-        },
+        output={'vcf.gz': '{root}.vcf.gz', 'vcf.gz.tbi': '{root}.vcf.gz.tbi'},
     )
 
     job.command(
