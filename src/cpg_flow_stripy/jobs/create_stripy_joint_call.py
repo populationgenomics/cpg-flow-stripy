@@ -38,7 +38,6 @@ def create_joint_call(json_paths: dict[str, Path], gene_lookup: Path, output: Pa
         """
     )
 
-    # maybe tabix the file? that requires an extra tool added to the image and CBA right now
     batch.write_output(job.output, str(output).removesuffix('.vcf.gz'))
 
     return job
