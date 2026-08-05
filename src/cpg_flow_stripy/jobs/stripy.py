@@ -98,6 +98,7 @@ def run_stripy_pipeline(
     j = batch_instance.new_job('STRipy', job_attrs | {'tool': 'stripy'})
 
     j.image(config.config_retrieve(['images', 'stripy']))
+    j.storage('10Gi')
     j.cpu(4)
 
     config_path = 'config.json'
