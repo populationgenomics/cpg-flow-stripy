@@ -49,12 +49,12 @@ COMBINED_QUERY = gql(
 def get_cpg_metadata(
     dataset: str,
     relevant_ids: list[str],
-) -> tuple[dict[str, dict[str, str | int]], str | None]:
+) -> tuple[dict[str, dict[str, str | int]], str]:
     """
     Returns a tuple of:
     - dictionary mapping cpgID to metadata:
       {cpgID: {"family_id": str, "external_id": str, "affected": int or str}}
-    - project display_name from metamist (or None if not available)
+    - project display_name from metamist (falls back to dataset name)
     """
 
     # Handle test environment naming conventions
@@ -66,7 +66,7 @@ def get_cpg_metadata(
     result = query(COMBINED_QUERY, variables=variables)
 
     project = result.get('project', {})
-    display_name = project.get('meta', {}).get('display_name')
+    display_name = project.get('meta', {}).get('display_name', dataset)
 
     cpg_metadata = {}
 
@@ -261,7 +261,7 @@ def make_index_page(
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_glob_ids = list(inputs.keys())
     cpg_metadata, display_name = get_cpg_metadata(dataset_name, cpg_glob_ids)
-    dataset_title = display_name or re.sub(r'[-_]', ' ', dataset_name).title()
+    dataset_title = re.sub(r'[-_]', ' ', display_name).title()
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
