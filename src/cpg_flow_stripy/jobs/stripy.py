@@ -3,6 +3,7 @@ Create Hail Batch jobs to run STRipy
 """
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 import loguru
@@ -23,6 +24,7 @@ COMBINED_QUERY = gql(
     """
     query Pedigree($project: String!, $sgIds: [String!]!) {
         project(name: $project) {
+            meta
             sequencingGroups(id: {in_: $sgIds}, technology: {eq: "short-read"}) {
                 id
                 technology
@@ -44,10 +46,15 @@ COMBINED_QUERY = gql(
 )
 
 
-def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> dict[str, dict[str, str | int]]:
+def get_cpg_metadata(
+    dataset: str,
+    relevant_ids: list[str],
+) -> tuple[dict[str, dict[str, str | int]], str]:
     """
-    Returns a dictionary mapping cpgID to metadata:
-    {cpgID: {"family_id": str, "external_id": str, "affected": int or str}}
+    Returns a tuple of:
+    - dictionary mapping cpgID to metadata:
+      {cpgID: {"family_id": str, "external_id": str, "affected": int or str}}
+    - project display_name from metamist (falls back to dataset name)
     """
 
     # Handle test environment naming conventions
@@ -58,9 +65,12 @@ def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> dict[str, dict[st
     variables = {'project': query_dataset, 'sgIds': relevant_ids}
     result = query(COMBINED_QUERY, variables=variables)
 
+    project = result.get('project', {})
+    display_name = project.get('meta', {}).get('display_name', dataset)
+
     cpg_metadata = {}
 
-    sequencing_groups = result.get('project', {}).get('sequencingGroups', [])
+    sequencing_groups = project.get('sequencingGroups', [])
 
     for group in sequencing_groups:
         cpg_id = group.get('id')
@@ -79,7 +89,7 @@ def get_cpg_metadata(dataset: str, relevant_ids: list[str]) -> dict[str, dict[st
                 print(f'Warning: Missing metadata for requested ID {cpg_id}')
             continue
 
-    return cpg_metadata
+    return cpg_metadata, display_name
 
 
 def run_stripy_pipeline(
@@ -250,7 +260,8 @@ def make_index_page(
 
     # for the remaining files, collect the SG, family ID, report type, and report Path - write to a temp file
     cpg_glob_ids = list(inputs.keys())
-    cpg_metadata = get_cpg_metadata(dataset_name, cpg_glob_ids)
+    cpg_metadata, display_name = get_cpg_metadata(dataset_name, cpg_glob_ids)
+    dataset_title = re.sub(r'[-_]', ' ', display_name).title()
 
     file_prefix = config.config_retrieve(['storage', dataset_name, 'web'])
     html_prefix = config.config_retrieve(['storage', dataset_name, 'web_url'])
@@ -291,7 +302,7 @@ def make_index_page(
     j.command(f"""
         python3 -m cpg_flow_stripy.scripts.make_stripy_index \\
         --manifest {mega_input_file} \\
-        --dataset {dataset_name} \\
+        --dataset '{dataset_title}' \\
         --output {j.output} \\
         --logfile {j.biglog}
     """)
