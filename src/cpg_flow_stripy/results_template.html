@@ -407,7 +407,7 @@
 									</div>`
 
 					let chromosome = locusData.Coordinates.split(":")[0]
-					if (genotypingResults[i][locusID].Flag >= 0 || (genotypingResults[i][locusID].Flag == -1 && genotypingResults[i][locusID].Filter == "LowDepth")) {
+					if ((genotypingResults[i][locusID].Flag >= 0 || (genotypingResults[i][locusID].Flag == -1 && genotypingResults[i][locusID].Filter == "LowDepth")) && genotypingResults[i][locusID].Alleles && genotypingResults[i][locusID].Alleles.length > 0) {
 						let allelesData = genotypingResults[i][locusID].Alleles
 
 						var is_population_outlier = []

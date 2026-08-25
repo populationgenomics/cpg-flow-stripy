@@ -169,6 +169,8 @@ def main(
         for locus_id, details_dict in locus_item.items():
             flag_status = details_dict.get('Flag', 0)
             allele_status_list = details_dict.get('Alleles', [])
+            if 'Alleles' not in details_dict:
+                details_dict['Alleles'] = []
             coords = details_dict.get('TargetedLocus', {}).get('Coordinates') or ''
             ischromx = coords.startswith('chrX')
             allele_flag = ''
