@@ -166,8 +166,7 @@ def run_stripy_pipeline(
         --input {sequencing_group.id}__{sequencing_group.external_id}.cram  \\
         --logflags {j.log_path} \\
         --config {config_path} \\
-        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
-        {locus_arg}
+        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} {locus_arg}
 
 
     if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json ]; then
