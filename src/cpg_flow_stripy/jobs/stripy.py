@@ -147,7 +147,7 @@ def run_stripy_pipeline(
         custom_loci_argument = f'--custom {custom_loci_input}'
 
     # allow for no built-in loci, only using the custom BED content
-    if config.config_retrieve(['stripy', 'custom_calling_only']):
+    if config.config_retrieve(['stripy', 'custom_bed_only']):
         locus_arg = ''
     else:
         locus_arg = f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists", "default"]))}'

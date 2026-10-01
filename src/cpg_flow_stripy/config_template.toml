@@ -18,6 +18,10 @@ subset_svg_flag_threshold = 1
 # Update the stripy config.json file, default found here:
 # https://gitlab.com/andreassh/stripy-pipeline/-/blob/main/config.json?ref_type=heads
 
+# if this is true, the `--locus ...` flag to trigger loci in the STRipy built-in catalogue will be removed
+# meaning all loci and thresholds are entirely from the custom config
+custom_bed_only = false
+
 [stripy.config]
 output_svg_flag_threshold = 0
 log_flag_threshold = -1
