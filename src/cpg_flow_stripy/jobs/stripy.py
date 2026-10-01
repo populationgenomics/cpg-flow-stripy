@@ -145,7 +145,13 @@ def run_stripy_pipeline(
     if custom_loci_path:
         custom_loci_input = batch_instance.read_input(str(custom_loci_path))
         custom_loci_argument = f'--custom {custom_loci_input}'
-    locus_arg = f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists", "default"]))}'
+
+    # allow for no built-in loci, only using the custom BED content
+    if config.config_retrieve(['stripy', 'custom_bed_only']):
+        locus_arg = ''
+    else:
+        locus_arg = f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists", "default"]))}'
+
     cmd = f"""\
     cat {config_path}
 
@@ -160,8 +166,7 @@ def run_stripy_pipeline(
         --input {sequencing_group.id}__{sequencing_group.external_id}.cram  \\
         --logflags {j.log_path} \\
         --config {config_path} \\
-        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} \\
-        {locus_arg}
+        --analysis {config.config_retrieve(['stripy', 'analysis_type'])} {custom_loci_argument} {locus_arg}
 
 
     if [ -f $BATCH_TMPDIR/{sequencing_group.id}__{sequencing_group.external_id}.cram.json ]; then
