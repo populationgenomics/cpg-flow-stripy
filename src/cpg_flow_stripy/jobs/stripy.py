@@ -145,7 +145,13 @@ def run_stripy_pipeline(
     if custom_loci_path:
         custom_loci_input = batch_instance.read_input(str(custom_loci_path))
         custom_loci_argument = f'--custom {custom_loci_input}'
-    locus_arg = f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists", "default"]))}'
+
+    # allow for no built-in loci, only using the custom BED content
+    if config.config_retrieve(['stripy', 'custom_calling_only']):
+        locus_arg = ''
+    else:
+        locus_arg = f'--locus {",".join(config.config_retrieve(["stripy", "loci_lists", "default"]))}'
+
     cmd = f"""\
     cat {config_path}
 
