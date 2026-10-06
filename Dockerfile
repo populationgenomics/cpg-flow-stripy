@@ -1,7 +1,7 @@
 FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.138.cpg2-2
 
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV VERSION=0.5.0
+ENV VERSION=0.5.1
 
 RUN apt-get update && apt-get install -y \
         tabix && \

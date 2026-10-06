@@ -157,6 +157,7 @@ def run_stripy_pipeline(
 
     ln -s {mounted_cram_path} {sequencing_group.id}__{sequencing_group.external_id}.cram
     ln -s {mounted_cram_index_path} {sequencing_group.id}__{sequencing_group.external_id}.crai
+    ln -s {mounted_cram_index_path} {sequencing_group.id}__{sequencing_group.external_id}.cram.crai
 
     python3 stri.py \\
         --genome hg38 \\
