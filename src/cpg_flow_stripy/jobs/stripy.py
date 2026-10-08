@@ -275,9 +275,22 @@ def make_index_page(
     # an object to store all the content we need to write
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
-        fam_id = cpg_metadata[cpg_id]['family_id']
-        external_id = cpg_metadata[cpg_id]['external_id']
-        affected = cpg_metadata[cpg_id]['affected']
+
+        # get the CPG-ID's meta block
+        cpg_meta = cpg_metadata.get(cpg_id)
+
+        if cpg_meta is not None:
+            fam_id = cpg_meta['family_id']
+            external_id = cpg_meta['external_id']
+            affected = cpg_meta['affected']
+        elif config.config_retrieve(['stripy', 'allow_missing_meta'], False):
+            fam_id = cpg_id
+            external_id = cpg_id
+            affected = 0
+        else:
+            # this will be caught in the outer scope, in get_cpg_metadata
+            raise KeyError(f'CPG id {cpg_id} not found in metadata')
+
         # possible values for affected:0(unknown), 1(unaffected), 2(affected) -9(unknown)
         match affected:
             case 1:
