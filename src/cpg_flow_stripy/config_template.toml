@@ -22,6 +22,9 @@ subset_svg_flag_threshold = 1
 # meaning all loci and thresholds are entirely from the custom config
 custom_bed_only = false
 
+# if true, we permit a situation where a CPG ID has no metadata, so it will be given dummy values
+allow_missing_meta = false
+
 [stripy.config]
 output_svg_flag_threshold = 0
 log_flag_threshold = -1
