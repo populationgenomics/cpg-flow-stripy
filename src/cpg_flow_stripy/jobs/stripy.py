@@ -275,7 +275,6 @@ def make_index_page(
     # an object to store all the content we need to write
     collected_lines: list[str] = []
     for cpg_id, output_dict in inputs.items():
-
         # get the CPG-ID's meta block
         cpg_meta = cpg_metadata.get(cpg_id)
 
